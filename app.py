@@ -8,7 +8,9 @@ from datetime import datetime
 from datetime import timedelta
 import plotly.express as px
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup 
+from multipage import MultiPage
+from pages import stock_eval
 
 #https://towardsdatascience.com/creating-multipage-applications-using-streamlit-efficiently-b58a58134030
 
@@ -25,3 +27,13 @@ st.set_page_config(
      }
  )
 
+# Create app
+app = MultiPage()
+
+st.title("Stocks Evaluator Page")
+st.write("Stonks only go up")
+
+
+app.add_page("Stock Evaluation", stock_eval.app)
+
+app.run()

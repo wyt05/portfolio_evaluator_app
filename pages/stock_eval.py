@@ -10,60 +10,68 @@ import plotly.express as px
 import plotly.graph_objects as go
 import requests
 from bs4 import BeautifulSoup
+from streamlit_tags import st_tags
 
+#https://discuss.streamlit.io/t/new-component-streamlit-tags-a-new-way-to-do-add-tags-and-enter-keywords/10810
 
 def get_dataframe_stock(ticker, start_date, end_date):
-    tickers = [ticker]
     start_date = start_date
     end_date = end_date
-    panel_data = data.DataReader(tickers, 'yahoo', start_date, end_date)
-    return panel_data
+    panel_data = data.DataReader(ticker, 'yahoo', start_date, end_date)
+
+    print(panel_data)
+
+    pandas_close = panel_data['Close']
+    pandas_adj_close = panel_data['Adj Close']
+    
+    return pandas_close, pandas_adj_close
 
 
-def get_stock_news(ticker):
+def get_stock_news(tickers):
     news_dataframe = ""
     news_headlines = []
     news_synopsis = []
 
-    url = 'https://finance.yahoo.com/quote/' + ticker
-    test_response = requests.get(url)
-    soup = BeautifulSoup(test_response.text, features="lxml")
+    for ticker in tickers:
+        url = 'https://finance.yahoo.com/quote/' + ticker
+        test_response = requests.get(url)
+        soup = BeautifulSoup(test_response.text, features="lxml")
 
-    news_block = soup.find("ul", {"class": "My(0) P(0) Wow(bw) Ov(h)"})
+        news_block = soup.find("ul", {"class": "My(0) P(0) Wow(bw) Ov(h)"})
 
-    for item in news_block.findAll('li'):
-        if item.find('h3') is not None:
-            news_headlines.append(item.find('h3').text)
-            news_synopsis.append(item.find('p').text)
+        for item in news_block.findAll('li'):
+            if item.find('h3') is not None:
+                news_headlines.append(item.find('h3').text)
+                news_synopsis.append(item.find('p').text)
 
-    news_dataframe = pd.DataFrame(
-        {'News Headline': news_headlines, 'News Description': news_synopsis})
+        news_dataframe = pd.DataFrame(
+            {'News Headline': news_headlines, 'News Description': news_synopsis})
 
-    return news_dataframe
+        return round(news_dataframe, 2)
 
 #st.title("💬 Stock Evaluation Page")
 
-
+#Main app section
 def app():
 
     all_tickers = ['SPY', 'EURUSD=X', 'EURGBP=X',
                    'BTC-USD', 'AAPL', 'ETH-USD', 'TSLA']
 
-    with st.form(key='insert_stock'):
-        symbols = st.selectbox("Choose stocks to visualize", all_tickers)
-        date_cols = st.columns((1, 1))
-        start_date = date_cols[0].date_input('Start Date')
-        end_date = date_cols[1].date_input('End Date')
-        submitted = st.form_submit_button('Submit')
+    with st.expander("", True):
+        with st.form(key='insert_stock'):
+            symbols = st_tags(label="Choose stocks to visualize", text='Press enter to add more', suggestions=all_tickers)
+            date_cols = st.columns((1, 1))
+            start_date = date_cols[0].date_input('Start Date')
+            end_date = date_cols[1].date_input('End Date')
+            submitted = st.form_submit_button('Submit')
 
     if submitted:
-        stock_dataframe = get_dataframe_stock(symbols, start_date, end_date)
+        stock_close_dataframe, stock_adjClose_dataframe = get_dataframe_stock(symbols, start_date, end_date)
 
         news_dataframe = get_stock_news(symbols)
 
-        print(stock_dataframe)
-
-        main_close_price = px.line(stock_dataframe['Close'].reset_index(), x="Date", y=symbols, title='Stock Price History')
+        print(stock_close_dataframe)
+        main_close_price = px.line(stock_close_dataframe, x=stock_close_dataframe.index, y=symbols, title='Stock Price History')
         st.plotly_chart(main_close_price, use_container_width=True)
         
         # News
@@ -85,6 +93,6 @@ def app():
         stock_data_col, news_col = st.columns(2)
 
         # Stock price
-        stock_data_col.dataframe(stock_dataframe)
+        #stock_data_col.dataframe(stock_close_dataframe)
 
         news_col.plotly_chart(fig, use_container_width=True)

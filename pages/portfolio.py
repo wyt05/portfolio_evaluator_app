@@ -39,9 +39,9 @@ def app():
         START_DATE = start_date
         END_DATE = end_date
 
-        portfolio_obj = port.Portfolio(RISKY_ASSETS, START_DATE, END_DATE, N_DAYS)
+        portfolio_obj = port.Portfolio(RISKY_ASSETS, START_DATE, END_DATE, N_DAYS, N_PORTFOLIOS)
 
-        portfolio_close = portfolio_obj.get_close_dataframe()
+        
 
 
 

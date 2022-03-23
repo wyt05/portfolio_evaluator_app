@@ -15,11 +15,12 @@ from streamlit_tags import st_tags
 import yfinance as yf
 
 class Portfolio:
-    def __init__(self, symbols, start_date, end_date, n_days):
+    def __init__(self, symbols, start_date, end_date, n_days, n_portfolio):
         self.symbols = symbols
         self.start_date = start_date
         self.end_date = end_date
         self.n_days = n_days
+        self.n_portfolio = n_portfolio
         self.panel_info = yf.download(self.symbols, start=start_date, end=end_date)
 
     def get_full_info(self):
@@ -35,5 +36,34 @@ class Portfolio:
         return self.panel_info['Adj Close']
     
     def get_return_series(self):
-        
         return self.panel_info['Adj Close'].pct_change().dropna()
+
+    def monte_carlo_sim(self):
+        rand_seed = np.random.seed(42)
+        n_assets = len(self.symbols)
+        return_series = self.get_return_series()
+        avg_returns = return_series.mean() * self.n_days
+        cov_mat = return_series.cov() * self.n_days
+
+        weights = np.random.random(size=(self.n_portfolio, n_assets))
+        weights /=  np.sum(weights, axis=1)[:, np.newaxis]
+
+        portf_rtns = np.dot(weights, avg_returns)
+
+        portf_vol = []
+        for i in range(0, len(weights)):
+            portf_vol.append(np.sqrt(np.dot(weights[i].T, 
+                                    np.dot(cov_mat, weights[i]))))
+        portf_vol = np.array(portf_vol)  
+        portf_sharpe_ratio = portf_rtns / portf_vol
+
+        portf_weights = []
+        for portfolio in weights:
+            string = ''
+            for weight in portfolio:
+                weight = round(weight * 100,1)
+                string += str(weight) + '%, '
+            portf_weights.append(string[:len(string)-2])
+
+        
+

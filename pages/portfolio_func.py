@@ -39,7 +39,7 @@ class Portfolio:
         return self.panel_info['Adj Close'].pct_change().dropna()
 
     def monte_carlo_sim(self):
-        rand_seed = np.random.seed(42)
+        np.random.seed(42)
         n_assets = len(self.symbols)
         return_series = self.get_return_series()
         avg_returns = return_series.mean() * self.n_days

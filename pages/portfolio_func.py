@@ -88,4 +88,6 @@ class Portfolio:
     
         portf_rtns_ef = np.delete(portf_rtns_ef, indices_to_skip)
 
+        return portf_rtns_ef
+
 

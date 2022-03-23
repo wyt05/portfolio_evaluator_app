@@ -13,6 +13,7 @@ import requests
 from bs4 import BeautifulSoup
 from streamlit_tags import st_tags
 import yfinance as yf
+import portfolio_func as port
 
 # https://discuss.streamlit.io/t/new-component-streamlit-tags-a-new-way-to-do-add-tags-and-enter-keywords/10810
 #https://discuss.streamlit.io/t/part-of-page-is-getting-refreshed-on-dropdown-selection/3336
@@ -21,8 +22,6 @@ def get_dataframe_stock(ticker, start_date, end_date):
     start_date = start_date
     end_date = end_date
     panel_data = yf.download(ticker, start=start_date, end=end_date)
-
-    print(panel_data)
 
     pandas_close = panel_data['Close']
     pandas_adj_close = panel_data['Adj Close']
@@ -93,8 +92,6 @@ def app():
         #news_dataframe = get_stock_news(symbols[0])
 
         stock_price_col, return_series_col = st.columns(2)
-
-        yax_layout = dict()
 
         main_close_price = px.line(
             stock_close_dataframe, x=stock_close_dataframe.index, y=symbols, title='Stock Price History')

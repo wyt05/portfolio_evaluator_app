@@ -64,6 +64,28 @@ class Portfolio:
                 weight = round(weight * 100,1)
                 string += str(weight) + '%, '
             portf_weights.append(string[:len(string)-2])
-
         
+        portf_results_df = pd.DataFrame({'returns': portf_rtns,
+                                 'volatility': portf_vol,
+                                 'sharpe_ratio': portf_sharpe_ratio})
+
+        N_POINTS = 100
+        portf_vol_ef = []
+        indices_to_skip = []
+
+        portf_rtns_ef = np.linspace(portf_results_df.returns.min(), 
+                            portf_results_df.returns.max(), 
+                            N_POINTS)
+        portf_rtns_ef = np.round(portf_rtns_ef, 2)    
+        portf_rtns = np.round(portf_rtns, 2)
+
+        for point_index in range(N_POINTS):
+            if portf_rtns_ef[point_index] not in portf_rtns:
+                indices_to_skip.append(point_index)
+            continue
+        matched_ind = np.where(portf_rtns == portf_rtns_ef[point_index])
+        portf_vol_ef.append(np.min(portf_vol[matched_ind]))
+    
+        portf_rtns_ef = np.delete(portf_rtns_ef, indices_to_skip)
+
 

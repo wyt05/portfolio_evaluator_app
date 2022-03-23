@@ -10,8 +10,7 @@ import plotly.express as px
 import requests
 from bs4 import BeautifulSoup 
 from multipage import MultiPage
-from pages import stock_eval
-
+from pages import portfolio_pg, stock_eval
 #https://towardsdatascience.com/creating-multipage-applications-using-streamlit-efficiently-b58a58134030
 
 #Set page config
@@ -30,10 +29,8 @@ st.set_page_config(
 # Create app
 app = MultiPage()
 
-st.title("Stocks Evaluator Page")
-st.write("Stonks only go up")
-
 
 app.add_page("Stock Evaluation", stock_eval.app)
+app.add_page("Portfolio Evaluation", portfolio_pg.app)
 
 app.run()

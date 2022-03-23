@@ -1,4 +1,3 @@
-from tkinter import E
 from soupsieve import select
 import streamlit as st
 from pandas_datareader import data
@@ -14,39 +13,88 @@ import requests
 from bs4 import BeautifulSoup
 from streamlit_tags import st_tags
 import yfinance as yf
-import portfolio_func as port
 
-def app():
+class Portfolio:
+    def __init__(self, symbols, start_date, end_date, n_days=0, n_portfolio=0):
+        self.symbols = symbols
+        self.start_date = start_date
+        self.end_date = end_date
+        self.n_days = n_days
+        self.n_portfolio = n_portfolio
+        self.portfolio_rst = yf.download(symbols, start=start_date, end=end_date)
 
-    start_date_obj = datetime.strptime("01-01-2020", '%d-%m-%y')
-    end_date_obj = datetime.strptime("31-12-2021", '%d-%m-%y')
+    def get_full_info(self):
 
-    with st.form(key='stock_selection'):
-        symbols = st_tags(label="Choose stocks to visualize",
-                              text='Press enter to add more')
-        date_cols = st.columns((1, 1))
-        start_date = date_cols[0].date_input('Start Date', value=start_date_obj)
-        end_date = date_cols[1].date_input('End Date', value=end_date_obj)
-        submitted = st.form_submit_button('Submit')
+        return self.portfolio_rst
 
-    if submitted:
+    def get_close_dataframe(self):
 
-        ##Portfolio Creation
-        N_PORTFOLIOS = 10 ** 5
-        N_DAYS = 252
-        RISKY_ASSETS = symbols
-        RISKY_ASSETS.sort()
-        START_DATE = start_date
-        END_DATE = end_date
+        return self.portfolio_rst['Close']
+    
+    def get_adj_close_dataframe(self):
 
-        portfolio_obj = port.Portfolio(RISKY_ASSETS, START_DATE, END_DATE, N_DAYS, N_PORTFOLIOS)
-
+        return self.portfolio_rst['Adj Close']
+    
+    def get_return_series(self):
+        return self.portfolio_rst['Adj Close'].pct_change().dropna()
+    
+    def get_avg_returns(self):
         
+        return self.get_return_series().mean() * self.n_days
+    
+    def get_cov_mat(self):
+        return self.get_return_series().cov() * self.n_days
 
+    def monte_carlo_sim(self):
+        np.random.seed(42)
+        n_assets = len(self.symbols)
+        return_series = self.get_return_series()
+        avg_returns = return_series.mean() * self.n_days
+        cov_mat = return_series.cov() * self.n_days
 
+        weights = np.random.random(size=(self.n_portfolio, n_assets))
+        weights /=  np.sum(weights, axis=1)[:, np.newaxis]
 
+        portf_rtns = np.dot(weights, avg_returns)
 
+        portf_vol = []
+        for i in range(0, len(weights)):
+            portf_vol.append(np.sqrt(np.dot(weights[i].T, 
+                                    np.dot(cov_mat, weights[i]))))
+        portf_vol = np.array(portf_vol)  
+        portf_sharpe_ratio = portf_rtns / portf_vol
 
+        portf_weights = []
+        for portfolio in weights:
+            string = ''
+            for weight in portfolio:
+                weight = round(weight * 100,1)
+                string += str(weight) + '%, '
+            portf_weights.append(string[:len(string)-2])
+        
+        portf_results_df = pd.DataFrame({'returns': portf_rtns,
+                                 'volatility': portf_vol,
+                                 'sharpe_ratio': portf_sharpe_ratio})
 
+        N_POINTS = 100
+        portf_vol_ef = []
+        indices_to_skip = []
+
+        portf_rtns_ef = np.linspace(portf_results_df.returns.min(), 
+                            portf_results_df.returns.max(), 
+                            N_POINTS)
+        portf_rtns_ef = np.round(portf_rtns_ef, 2)    
+        portf_rtns = np.round(portf_rtns, 2)
+
+        for point_index in range(N_POINTS):
+            if portf_rtns_ef[point_index] not in portf_rtns:
+                indices_to_skip.append(point_index)
+                continue
+            matched_ind = np.where(portf_rtns == portf_rtns_ef[point_index])
+            portf_vol_ef.append(np.min(portf_vol[matched_ind]))
+    
+        portf_rtns_ef = np.delete(portf_rtns_ef, indices_to_skip)
+
+        return portf_vol_ef, portf_rtns_ef, portf_results_df, weights
 
 

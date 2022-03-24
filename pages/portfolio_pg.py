@@ -28,7 +28,8 @@ def app():
 
     with st.form(key='stock_selection'):
         symbols = st_tags(label="Choose stocks to visualize",
-                          text='Press enter to add more')
+                          text='Press enter to add more',
+                          maxtags=12)
         date_cols = st.columns((1, 1))
         start_date = date_cols[0].date_input(
             'Start Date', value=start_date_obj.date())

@@ -44,7 +44,7 @@ def app():
     with st.form(key='stock_selection'):
         symbols = st_tags(label="Choose a portfolio to visualize",
                           text='Press enter to add more',
-                          maxtags=1,
+                          maxtags=12,
                         suggestions=all_portfolio)
         
         date_cols = st.columns((1, 1))

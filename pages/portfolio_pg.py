@@ -34,9 +34,13 @@ def get_dataframe_stock(ticker, start_date, end_date):
 
 
 def app():
+    
+    
 
     st.title("Portfolio Evaluator Page")
     st.write("Stonks only go up")
+    
+    st.write(st.session_state.key)
     
     all_portfolio = ["Timmy", "Jimmy"]
 

@@ -1,3 +1,6 @@
+from lib2to3.pygram import Symbols
+from operator import index
+from turtle import onclick
 from mechanize import Item
 from soupsieve import select
 import streamlit as st
@@ -32,29 +35,26 @@ def get_dataframe_stock(ticker, start_date, end_date):
 
     return pandas_close, pandas_adj_close, return_series
 
+def store_info(name, info):
+    st.session_state.key = name
+    st.session_state[name] = info
+
 
 def app():
-
-    st.title("Portfolio Evaluator Page")
-    st.write("Stonks only go up")
-    
-    all_portfolio = ["Timmy", "Jimmy"]
-
-
     with st.form(key='stock_selection'):
+        st.title("Portfolio Evaluator Page")
+        st.write("Stonks only go up")
         symbols = st_tags(label="Choose a portfolio to visualize",
-                          text='Press enter to add more',
-                          maxtags=12,
-                        suggestions=all_portfolio)
-        
+                            text='Press enter to add more',
+                            maxtags=12)
+            
         date_cols = st.columns((1, 1))
         start_date = date_cols[0].date_input('Start Date')
         end_date = date_cols[1].date_input('End Date')
         submitted = st.form_submit_button('Submit')
-
-    if submitted:
-
-       # Portfolio Creation
+            
+    if submitted:        
+        # Portfolio Creation
         N_PORTFOLIOS = 10 ** 5
         N_DAYS = 252
         RISKY_ASSETS = symbols
@@ -66,40 +66,17 @@ def app():
         
 
         portfolio_obj = Portfolio(
-           RISKY_ASSETS, START_DATE, END_DATE, N_DAYS, N_PORTFOLIOS)
+            RISKY_ASSETS, START_DATE, END_DATE, N_DAYS, N_PORTFOLIOS)
         portf_vol_ef, portf_rtns_ef, portf_results_df, final_weights = portfolio_obj.monte_carlo_sim()
 
         # Create Graph
-        MARKS = ['o', 'X', 'd', '*', '.', '>', '<', '1', 'h', 'H', '+', 'v']
 
-        cov_mat = portfolio_obj.get_cov_mat()
-        avg_returns = portfolio_obj.get_avg_returns()
+        
+        efficient_frontier = px.scatter(portf_results_df, title='Efficient Frontier', x='volatility', y = 'returns', color='sharpe_ratio' )
+                
+        st.plotly_chart(efficient_frontier, use_container_width=True)
 
-        fig, ax = plt.subplots(figsize=(10, 5))
-        portf_results_df.plot(kind='scatter', x='volatility',
-                              y='returns', c='sharpe_ratio',
-                              cmap='RdYlGn', edgecolors='black',
-                              ax=ax)
-        ax.set(xlabel='Volatility',
-               ylabel='Expected Returns',
-               title='Efficient Frontier')
-        ax.plot(portf_vol_ef, portf_rtns_ef, 'b--')
 
-        for asset_index in range(len(RISKY_ASSETS)):
-            ax.scatter(x=np.sqrt(cov_mat.iloc[asset_index, asset_index]),
-                       y=avg_returns[asset_index],
-                       marker=MARKS[asset_index],
-                       s=150,
-                       color='black',
-                       label=RISKY_ASSETS[asset_index])
-
-        ax.legend()
-
-        efficient_frontier_img = BytesIO()
-        fig.savefig(efficient_frontier_img, format="png")
-        st.image(efficient_frontier_img)
-
-        # st.pyplot(fig)
 
         # Print the Maximum Results
         max_sharpe_ind = np.argmax(portf_results_df.sharpe_ratio)
@@ -107,6 +84,7 @@ def app():
 
         print('sharpe:', max_sharpe_ind)
 
+        
         st.subheader('Maximum Sharpe Ratio Performance')
         max_col1, max_col2, max_col3 = st.columns(3)
         max_col1.metric('Returns', str(round(max_sharpe_portf[0] * 100, 2)) + "%")
@@ -115,27 +93,18 @@ def app():
 
         # Show pie chart
 
-        full_str_max = []
-        for x, y in zip(RISKY_ASSETS, final_weights[max_sharpe_ind]):
-            full_str_max.append( (x + ": " + str(round(y*100, 2))) + "% " )
-
-        labels = RISKY_ASSETS
-        sizes = np.around(final_weights[np.argmax(portf_results_df.sharpe_ratio)]*100, decimals=2)
-
-        max_pie_fig, max_pie_ax = plt.subplots()
-        max_pie_ax.pie(sizes, labels=labels, autopct='%1.1f%%',
-        shadow=True, startangle=90)
-        max_pie_ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+        max_sharpe_sorted = portf_results_df.sort_values(by=['sharpe_ratio'],ascending=False)
+        max_sharpe_portf = max_sharpe_sorted.head(1) 
+        temp = final_weights[max_sharpe_portf.index]
         
-        # Display pie + table in text
-        max_sharpe_pie_col1, max_sharpe_pie_col2 = st.columns(2)
-
-        maximum_sharpe_ratio_img = BytesIO()
-        max_pie_fig.savefig(maximum_sharpe_ratio_img, format="png")
-        max_sharpe_pie_col1.image(maximum_sharpe_ratio_img)
-
-        for text in full_str_max:
-            max_sharpe_pie_col2.write(text)
+        max_sharpe_weight_final_df = pd.DataFrame(index=RISKY_ASSETS)
+        max_sharpe_weight_final_df['weights'] = temp[0]
+        
+        
+        max_breakdown = px.pie(max_sharpe_weight_final_df, values=max_sharpe_weight_final_df['weights'], names = max_sharpe_weight_final_df.index, title="Maximum Sharpe Ratio Breakdown")
+        st.plotly_chart(max_breakdown, use_container_width=True)
+        st.session_state.key = "Max_Sharpe"
+        st.session_state["Max_Sharpe"] = max_sharpe_weight_final_df
         
         # Print Minimum Volatility
         min_vol_ind = np.argmin(portf_results_df.volatility)
@@ -148,29 +117,18 @@ def app():
         min_col3.metric('Sharpe Ratio', round(min_vol_portf[2], 2))
 
         # Show pie chart
-
-        full_str_min = []
-        for x, y in zip(RISKY_ASSETS, final_weights[min_vol_ind]):
-            full_str_min.append( (x + ": " + str(round(y*100, 2))) + "% " )
-
-        labels = RISKY_ASSETS
-        sizes = np.around(final_weights[np.argmin(portf_results_df.volatility)]*100, decimals=2)
-
-        min_pie_fig, min_pie_ax = plt.subplots()
-        min_pie_ax.pie(sizes, labels=labels, autopct='%1.1f%%',
-        shadow=True, startangle=90)
-        min_pie_ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
         
-        # Display pie + table in text
-        min_vol_pie_col1, max_vol_pie_col2 = st.columns(2)
-
-        min_volatility_img = BytesIO()
-        min_pie_fig.savefig(min_volatility_img, format="png")
-        min_vol_pie_col1.image(min_volatility_img)
-
-        for text in full_str_min:
-            max_vol_pie_col2.write(text)
-
+        min_vol_sorted = portf_results_df.sort_values(by=['volatility'],ascending=True)
+        min_vol_portf = min_vol_sorted.head(1) 
+        temp_vol = final_weights[min_vol_portf.index]
+        
+        min_vol_weight_final_df = pd.DataFrame(index=RISKY_ASSETS)
+        min_vol_weight_final_df['weights'] = temp_vol[0]
+        
+        min_vol_breakdown = px.pie(min_vol_weight_final_df, values=min_vol_weight_final_df['weights'], names = min_vol_weight_final_df.index, title="Minimum Volatility Breakdown")
+        st.plotly_chart(min_vol_breakdown, use_container_width=True)
+        st.session_state.key = "Min_Vol"
+        st.session_state["Min_Vol"] = min_vol_weight_final_df
         # Maximum Returns
         max_returns_ind = np.argmax(portf_results_df.returns)
         max_returns_portf = portf_results_df.loc[max_returns_ind]
@@ -182,34 +140,51 @@ def app():
         max_ret_col3.metric('Sharpe Ratio', round(max_returns_portf[2], 2))
 
         # Show pie chart
-        # CONFIRM AGN if argmin/argmax
-        full_str_max_ret = []
-        for x, y in zip(RISKY_ASSETS, final_weights[max_returns_ind]):
-            full_str_max_ret.append( (x + ": " + str(round(y*100, 2))) + "% " )
-
-        labels = RISKY_ASSETS
-        sizes = np.around(final_weights[np.argmax(portf_results_df.returns)]*100, decimals=2)
-
-        max_ret_pie_fig, max_ret_pie_ax = plt.subplots()
-        max_ret_pie_ax.pie(sizes, labels=labels, autopct='%1.1f%%',
-        shadow=True, startangle=90)
-        max_ret_pie_ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+        max_ret_sorted = portf_results_df.sort_values(by=['returns'],ascending=False)
+        max_ret_portf = max_ret_sorted.head(1) 
+        max_ret_temp = final_weights[max_ret_portf.index]
         
-        #Display pie + table in text
-        max_ret_pie_col1, max_ret_pie_col2 = st.columns(2)
-
-        max_ret_img = BytesIO()
-        max_ret_pie_fig.savefig(max_ret_img, format="png")
-        max_ret_pie_col1.image(max_ret_img)
-
-        for text in full_str_max_ret:
-            max_ret_pie_col2.write(text)
-
-
-
-
-
-
-
+        max_returns_weight_final_df = pd.DataFrame(index=RISKY_ASSETS)
+        max_returns_weight_final_df['weights'] = max_ret_temp[0]
+        
+        max_breakdown = px.pie(max_returns_weight_final_df, values=max_returns_weight_final_df['weights'], names = max_returns_weight_final_df.index, title="Minimum Volatility Breakdown")
+        st.plotly_chart(max_breakdown, use_container_width=True)
+        st.session_state.key = "Max_Returns"
+        st.session_state["Max_Returns"] = max_returns_weight_final_df
+        
+    if len(symbols) > 0:
+        with st.form(key='portfolio selection'):
+            st.title("Write your desired weight")
+            port_name = st_tags(label="type in your name",
+                                text='Press enter to add more',
+                                maxtags=1)
+            port_weight = st_tags(label="type in your desired weight",
+                                text='Press enter to add more',
+                                maxtags=12)
+            choice = st.radio(
+                            "Or Choose your prefered risk level",
+                            ('I decide myself','Maximum Sharpe', 'Minimum Volatility', 'Maximum Returns'))
+            submitted = st.form_submit_button('Submit')
+            
+        if submitted:
+            if choice == 'Maximum Sharpe':
+                name = st.session_state["Max_Sharpe"]
+            
+            elif choice == 'Minimum Volatility':
+                name = st.session_state["Min_Vol"]
+                
+            elif choice == 'Maximum Returns':
+                name = st.session_state["Max_Returns"]
+            
+            else:
+                weight_df = pd.DataFrame(index=symbols)
+                if len(port_weight) != len(symbols):
+                    st.write("Please ensure that the weight matches the number")
+                else:
+                    weight_df['weights'] = port_weight
+                name = weight_df        
+                    
+            st.write(name)
+            
 
 

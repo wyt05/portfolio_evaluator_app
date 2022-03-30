@@ -18,8 +18,22 @@ import yfinance as yf
 from pages.portfolio import Portfolio
 from io import BytesIO
 
-from matplotlib.ticker import FuncFormatter
-from scipy.stats import norm
+
+import nltk
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+nltk.download('vader_lexicon')
+
+def get_sentimental_label(val):
+  if (val <= 1.0 and val >= 0.6):
+    return 'Very Positive'
+  elif (val < 0.6 and val >= 0.10):
+    return 'Positve'
+  elif (val < 0.10 and val > - 0.10):
+    return 'Neutral'
+  elif ( val <= -0.10 and val > - 0.55):
+    return 'Negative'
+  else:
+    return 'Very Negative'
 
 
 def app():
@@ -35,6 +49,7 @@ def app():
             date_cols = st.columns((1, 1))
             start_date = date_cols[0].date_input('Start Date', start_date_df)
             end_date = date_cols[1].date_input('End Date', end_date_df)
+            cleaned_data_file = st.file_uploader("Choose cleaned sentiment for ARKK")
             submitted = st.form_submit_button('Submit')
 
     
@@ -43,6 +58,7 @@ def app():
 
         technical_ind_chart = portfolio_item.get_technical_indicators()
         return_series_chart = portfolio_item.get_return_series()
+        sharpe_ratio = portfolio_item.get_sharpe_ratio(0.01)
 
         #Overview
         st.subheader('Overview')
@@ -52,18 +68,11 @@ def app():
         no_of_days = end_date - start_date
         total_return = return_series_chart['return_series'].tail(1).values
         annualized_return = ((((1+total_return)**(365/no_of_days.days)) - 1)*100).round(2)
-
-        #Determine Sharpe Ratio
-        
-
-        #Overall Score
-
-
         
         #Metrics
         metric1, metric2 = st.columns(2)
-        metric1.metric('Annualized Return', annualized_return)
-
+        metric1.metric('Annualized Return', str(annualized_return[0]) + "%")
+        metric2.metric('Sharpe Ratio', round(sharpe_ratio, 2))
 
         #Stock result
         main_return_series = px.line(
@@ -72,8 +81,6 @@ def app():
         main_return_series.layout.yaxis.tickformat=',.0%'
 
         st.plotly_chart(main_return_series)
-
-
 
         #Technical Indicator results
         st.subheader('Technical Indicators')
@@ -102,6 +109,28 @@ def app():
         macd_graph = px.line(technical_ind_chart, x=technical_ind_chart.index, y='MACDh_12_26_9', title='MACD Histogram')
         macd_col.plotly_chart(macd_graph, use_container_width=True)
         macd_col.success(macd_msg)
+
+        #Sentiment Analysis
+        if cleaned_data_file is not None:
+            data_file = pd.read_csv(cleaned_data_file)
+
+            sentiment = SentimentIntensityAnalyzer()
+
+            data_file['sentiment'] = data_file.title.apply(lambda x: sentiment.polarity_scores(x))
+            data_file.sentiment = data_file.sentiment.apply(pd.Series)['compound']
+
+            data_file['sentiment_class'] = data_file['sentiment'].apply(get_sentimental_label)
+            data_file.head()
+
+            sentiment_2021 = data_file
+            sentiment_2021[['title','date','sentiment','sentiment_class']].sort_values('sentiment', ascending=False).head(10)
+
+            sentiment_overtime = px.line(sentiment_2021, x=sentiment_2021.month, y=sentiment_2021.sentiment)
+
+            st.plotly_chart(sentiment_overtime)
+
+        else:
+            st.write("Nothing")
 
 
         

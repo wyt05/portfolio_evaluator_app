@@ -189,18 +189,18 @@ class Portfolio:
     def get_sharpe_ratio(self, risk_free_rate):
         returns_ts = pd.DataFrame()
         returns_ts['pct_change'] = self.get_pct_change()
-        avg_daily_ret = returns_ts.mean()
+        avg_daily_ret = returns_ts['pct_change'].mean()
 
         returns_ts['riskfree_rate'] = risk_free_rate / 252
         avg_rf_ret = returns_ts['riskfree_rate'].mean()
 
-        returns_ts['excess_return'] = returns_ts['pct_change'] - returns_ts['risk_free_rate']
+        returns_ts['excess_return'] = returns_ts['pct_change'] - returns_ts['riskfree_rate']
 
-        sharpe_ratio = ((avg_daily_ret - avg_rf_ret) /returns_ts['Excess_ret_BITO'].std())*np.sqrt(252)
+        print(returns_ts)
 
+        sharpe_ratio = ((avg_daily_ret - avg_rf_ret) /returns_ts['excess_return'].std())*np.sqrt(252)
 
-
-        returns_ts['excess_ret'] = returns_ts
+        return sharpe_ratio
 
     def get_close_dataframe(self):
 

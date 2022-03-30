@@ -10,7 +10,7 @@ import plotly.express as px
 import requests
 from bs4 import BeautifulSoup 
 from multipage import MultiPage
-from pages import portfolio_pg, stock_eval, portfolio_creation
+from pages import portfolio_pg, stock_eval, portfolio_creation, crypto_research
 #https://towardsdatascience.com/creating-multipage-applications-using-streamlit-efficiently-b58a58134030
 
 #Set page config
@@ -31,6 +31,7 @@ app = MultiPage()
 
 
 app.add_page("Stock Evaluation", stock_eval.app)
+app.add_page("Crypto Research", crypto_research.app)
 app.add_page("Portfolio Evaluation", portfolio_pg.app)
 app.add_page("Portfolio Edit/Create", portfolio_creation.app)
 

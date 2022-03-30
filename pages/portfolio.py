@@ -13,6 +13,29 @@ import requests
 from bs4 import BeautifulSoup
 from streamlit_tags import st_tags
 import yfinance as yf
+import pandas_ta as ta
+
+def trend_rev(column_name, df, trend_detect='down'):
+    determine_trend = []
+    max_val = 0
+    #Detects REVERSAL 
+    for index, row in df.sort_index(ascending=False).iterrows():
+        #check if there is a reverse trend (If it's current downtrend)
+        if trend_detect == 'down':
+            if row[column_name] < max_val:
+                determine_trend.append(row[column_name])
+                max_val = row[column_name]
+            else:
+                break
+        #check if there is a reverse trend (If it's current uptrend)
+        else:
+            if row[column_name] > max_val:
+                determine_trend.append(row[column_name])
+                max_val = row[column_name]
+            else:
+                break
+    determine_trend.reverse()
+    return determine_trend
 
 class Portfolio:
     def __init__(self, symbols, start_date, end_date, n_days=0, n_portfolio=0):
@@ -21,69 +44,228 @@ class Portfolio:
         self.end_date = end_date
         self.n_days = n_days
         self.n_portfolio = n_portfolio
-        self.portfolio_rst = yf.download(symbols, start=start_date, end=end_date)
+        self.portfolio_rst = yf.download(
+            symbols, start=start_date, end=end_date)
 
     def get_full_info(self):
 
         return self.portfolio_rst
 
+    def get_technical_indicators(self):
+
+        technical_ind = self.portfolio_rst
+
+        macd = ta.macd(self.portfolio_rst['Close'], fast=12, slow=26)
+        rsi = ta.rsi(self.portfolio_rst['Close'])
+        bbands = ta.bbands(self.portfolio_rst['Close'], length=20)
+
+        technical_ind = technical_ind.merge(macd, on='Date')
+        technical_ind = technical_ind.merge(rsi, on='Date')
+        technical_ind = technical_ind.merge(bbands, on='Date')
+
+        return technical_ind
+
+    def get_technical_result_bbands(self):
+        #Points will be tabulated to return a signal
+        #2 is strong buy, 1 is buy, 0 is hold, -1 is sell and -2 is strong sell
+
+        points = 0
+        message = ''
+        technical_ind = self.get_technical_indicators()
+
+        current_price = technical_ind.tail(1)['Close'].values[0]
+        upper_band = technical_ind.tail(1)['BBU_20_2.0'].values[0]
+        lower_band = technical_ind.tail(1)['BBL_20_2.0'].values[0]
+        sma_20 = technical_ind.tail(1)['BBM_20_2.0'].values[0]
+
+        if current_price > upper_band:
+            message = 'The price has broken past upper band. INDICATE STRONG BUY'
+            points = 2
+
+        elif current_price < lower_band:
+            message = 'The price has broken past lower band. INDICATE STRONG SELL'
+            points = -2
+
+        else:
+
+            price_range = {'up_df': 0, 'lo_df': 0, 'md_df': 0}
+            price_range['up_df'] = abs(upper_band - current_price)
+            price_range['lo_df'] = abs(current_price - lower_band)
+            price_range['md_df'] = abs(sma_20 - current_price)
+
+            print(price_range)
+
+            # If price is closer to lower band compared to mid and upper
+            if price_range['lo_df'] < price_range['up_df'] and price_range['lo_df'] < price_range['md_df']:
+                message = 'The price is currently close to oversold. INDICATE BUY'
+                points = 1
+
+            # If price is closer to upper band compared to mid and lower
+            elif price_range['up_df'] < price_range['lo_df'] and price_range['up_df'] < price_range['md_df']:
+                message = 'A price is currently close to overbought, INDICATE SELL'
+                points = -1
+
+            # If price is closer to middle band, but above the middle band
+            elif price_range['md_df'] < (price_range['up_df'] and price_range['lo_df']) and price_range['up_df'] < price_range['lo_df']:
+                message = 'Price is slightly above the middle band., INDICATE HOLD'
+                points = 0
+
+            # If price is closer to middle band, but below the middle band
+            elif price_range['md_df'] < (price_range['up_df'] and price_range['lo_df']) and price_range['lo_df'] < price_range['up_df']:
+                message = 'Price is slightly below the middle band., INDICATE HOLD'
+                points = 0
+    
+        return message, points
+    
+    def get_technical_results_rsi(self):
+        points = 0
+        message = ''
+        technical_ind = self.get_technical_indicators()
+
+        rsi_check = technical_ind.tail(1)['RSI_14'].values[0]
+
+        if rsi_check > 70:
+            message = 'The stock is overbought, above 70. INDICATE SELL'
+            points = -2
+        elif rsi_check < 30:
+            message = 'The stock is oversold, below 30. INDICATE BUY'
+            points = 2
+        else:
+            
+            #If RSI closer to lower
+            if rsi_check > 55 and rsi_check < 70:
+                message = "Stock close to overbought, but it could be an uptrend"
+                points =  -1
+
+            elif rsi_check < 45 and rsi_check > 30:
+                message = "Stock close to oversold, but it could be a downtrend"
+                points = 1
+
+            else:
+                message = "Stock currently close to neutral"
+                points = 0
+        
+        return message, points
+
+    def get_technical_results_macd(self):
+        points = 0
+        message = ''
+        technical_ind = self.get_technical_indicators()
+
+        macd_h_curr = technical_ind.tail(1)['MACDh_12_26_9'].values[0]
+
+        #if h is less than 0, it is currently in downtrend
+        if macd_h_curr < 0:
+            determine_trend = trend_rev('MACDh_12_26_9', technical_ind, 'down')
+            
+            if len(determine_trend) == 1:
+                message = "Strong downtrend, indicate SELL"
+                points = -2
+            else:
+                message = "Weakening downtrend, indicate bullish, - BUY"
+                points = 1
+            
+        elif macd_h_curr > 0:
+            determine_trend = []
+
+            #Detects REVERSAL 
+            determine_trend = trend_rev('MACDh_12_26_9', technical_ind, 'up')
+
+            #If only one item here, means it's GOING UP, strong uptrend, 
+            #if there's a trend detected, it means the price is weakening
+            if len(determine_trend) == 1:
+                message = "Strong Uptrend, indicate BUY"
+                points = 2
+            else:
+                message = "Weakening Uptrend, indicate SELL"
+                points = -1
+
+        else:
+            message = "Reversal."
+            points = 0
+
+        return message, points
+
+    def get_sharpe_ratio(self, risk_free_rate):
+        returns_ts = pd.DataFrame()
+        returns_ts['pct_change'] = self.get_pct_change()
+        avg_daily_ret = returns_ts.mean()
+
+        returns_ts['riskfree_rate'] = risk_free_rate / 252
+        avg_rf_ret = returns_ts['riskfree_rate'].mean()
+
+        returns_ts['excess_return'] = returns_ts['pct_change'] - returns_ts['risk_free_rate']
+
+        sharpe_ratio = ((avg_daily_ret - avg_rf_ret) /returns_ts['Excess_ret_BITO'].std())*np.sqrt(252)
+
+
+
+        returns_ts['excess_ret'] = returns_ts
+
     def get_close_dataframe(self):
 
         return self.portfolio_rst['Close']
-    
+
     def get_adj_close_dataframe(self):
 
         return self.portfolio_rst['Adj Close']
-    
+
     def get_return_series(self):
+        self.portfolio_rst['return_series'] = self.portfolio_rst['Adj Close'].pct_change()
+
+        self.portfolio_rst['return_series'] = (1 + self.portfolio_rst['return_series']).cumprod() - 1
+
+        return self.portfolio_rst
+    
+    def get_pct_change(self):
         return self.portfolio_rst['Adj Close'].pct_change().dropna()
-    
+
     def get_avg_returns(self):
-        
-        return self.get_return_series().mean() * self.n_days
-    
+
+        return self.get_pct_change().mean() * self.n_days
+
     def get_cov_mat(self):
-        return self.get_return_series().cov() * self.n_days
+        return self.get_pct_change().cov() * self.n_days
 
     def monte_carlo_sim(self):
         np.random.seed(42)
         n_assets = len(self.symbols)
-        return_series = self.get_return_series()
+        return_series = self.get_pct_change()
         avg_returns = return_series.mean() * self.n_days
         cov_mat = return_series.cov() * self.n_days
 
         weights = np.random.random(size=(self.n_portfolio, n_assets))
-        weights /=  np.sum(weights, axis=1)[:, np.newaxis]
+        weights /= np.sum(weights, axis=1)[:, np.newaxis]
 
         portf_rtns = np.dot(weights, avg_returns)
 
         portf_vol = []
         for i in range(0, len(weights)):
-            portf_vol.append(np.sqrt(np.dot(weights[i].T, 
-                                    np.dot(cov_mat, weights[i]))))
-        portf_vol = np.array(portf_vol)  
+            portf_vol.append(np.sqrt(np.dot(weights[i].T,
+                                            np.dot(cov_mat, weights[i]))))
+        portf_vol = np.array(portf_vol)
         portf_sharpe_ratio = portf_rtns / portf_vol
 
         portf_weights = []
         for portfolio in weights:
             string = ''
             for weight in portfolio:
-                weight = round(weight * 100,1)
+                weight = round(weight * 100, 1)
                 string += str(weight) + '%, '
             portf_weights.append(string[:len(string)-2])
-        
+
         portf_results_df = pd.DataFrame({'returns': portf_rtns,
-                                 'volatility': portf_vol,
-                                 'sharpe_ratio': portf_sharpe_ratio})
+                                         'volatility': portf_vol,
+                                         'sharpe_ratio': portf_sharpe_ratio})
 
         N_POINTS = 100
         portf_vol_ef = []
         indices_to_skip = []
 
-        portf_rtns_ef = np.linspace(portf_results_df.returns.min(), 
-                            portf_results_df.returns.max(), 
-                            N_POINTS)
-        portf_rtns_ef = np.round(portf_rtns_ef, 2)    
+        portf_rtns_ef = np.linspace(portf_results_df.returns.min(),
+                                    portf_results_df.returns.max(),
+                                    N_POINTS)
+        portf_rtns_ef = np.round(portf_rtns_ef, 2)
         portf_rtns = np.round(portf_rtns, 2)
 
         for point_index in range(N_POINTS):
@@ -92,9 +274,7 @@ class Portfolio:
                 continue
             matched_ind = np.where(portf_rtns == portf_rtns_ef[point_index])
             portf_vol_ef.append(np.min(portf_vol[matched_ind]))
-    
+
         portf_rtns_ef = np.delete(portf_rtns_ef, indices_to_skip)
 
         return portf_vol_ef, portf_rtns_ef, portf_results_df, weights
-
-

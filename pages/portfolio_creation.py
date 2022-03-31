@@ -167,24 +167,40 @@ def app():
             submitted = st.form_submit_button('Submit')
             
         if submitted:
-            if choice == 'Maximum Sharpe':
-                name = st.session_state["Max_Sharpe"]
             
-            elif choice == 'Minimum Volatility':
-                name = st.session_state["Min_Vol"]
-                
-            elif choice == 'Maximum Returns':
-                name = st.session_state["Max_Returns"]
+            #Ensure that names
+            if len(port_name) == 0:
+                st.write("It appears that there is no name attributed to this portfolio")
             
             else:
-                weight_df = pd.DataFrame(index=symbols)
-                if len(port_weight) != len(symbols):
-                    st.write("Please ensure that the weight matches the number")
+                if choice == 'Maximum Sharpe':
+                    st.session_state.key = port_name[0]
+                    st.session_state[port_name[0]] = st.session_state["Max_Sharpe"]
+                
+                elif choice == 'Minimum Volatility':
+                    st.session_state.key = port_name[0]
+                    st.session_state[port_name[0]] = st.session_state["Min_Vol"]
+                
+                elif choice == 'Maximum Returns':
+                    st.session_state.key = port_name[0]
+                    st.session_state[port_name[0]] = st.session_state["Max_Returns"]
+                   
                 else:
-                    weight_df['weights'] = port_weight
-                name = weight_df        
+                    weight_df = pd.DataFrame(index=symbols)
                     
-            st.write(name)
+                    total = 0
+                    for i in range(len(port_weight)):
+                        total += port_weight[i]
+                    
+                    if len(port_weight) != len(symbols) and total != 1:
+                        st.write("Please ensure that the weight matches the number")
+                    else:
+                        st.session_state.key = port_name[0]
+                        weight_df['weights'] = port_weight
+                        st.session_state[port_name[0]] = weight_df
+                          
+                    
+            st.write(st.session_state)
             
 
 

@@ -33,6 +33,6 @@ app = MultiPage()
 app.add_page("Stock Evaluation", stock_eval.app)
 app.add_page("Crypto Research", crypto_research.app)
 app.add_page("Portfolio Evaluation", portfolio_pg.app)
-app.add_page("Portfolio Edit/Create", portfolio_creation.app)
+app.add_page("Portfolio Creation", portfolio_creation.app)
 
 app.run()

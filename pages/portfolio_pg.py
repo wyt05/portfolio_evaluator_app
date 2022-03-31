@@ -32,11 +32,34 @@ def get_dataframe_stock(ticker, start_date, end_date):
 
     return pandas_close, pandas_adj_close, return_series
 
+def get_stock_news_list(tickers):
+    news_dataframe = ""
+    news_headlines = []
+    news_synopsis = []
+    news_link = []
+
+    for ticker in tickers:
+        url = 'https://finance.yahoo.com/quote/' + ticker
+        test_response = requests.get(url)
+        soup = BeautifulSoup(test_response.text, features='lxml')
+
+        news_block = soup.find("ul", {"class": "My(0) P(0) Wow(bw) Ov(h)"})
+
+        for item in news_block.findAll('li'):
+            if item.find('h3') is not None:
+                news_headlines.append(item.find('h3').text)
+                news_synopsis.append(item.find('p').text)
+                news_link.append('https://finance.yahoo.com' +
+                                item.find('a')['href'])
+
+        news_dataframe = pd.DataFrame(
+            {'News Headline': news_headlines, 'News Description': news_synopsis, 'Link': news_link})
+
+    return news_dataframe
+
 
 def app():
     
-    
-
     st.title("Portfolio Evaluator Page")
     st.write("Stonks only go up")
     
@@ -65,9 +88,21 @@ def app():
         portfolio_tickers_timmy = [['SPY',0.5,], ['TLT',0.1], ['EFA', 0.4]]
         portfolio_tickers_jimmy = [['SPY',0.5], ['EURUSD=X',0.5]]
         
+        #initialize portfolio data
+        if portfolio_choice[0] in st.session_state:
+            portfolio_tickers = st.session_state[portfolio_choice[0]]
+        
+        else:
+            st.write('This person is not your customers')
+            
+        #session data
+        if portfolio_choice[0] in st.session_state:
+            tickers = portfolio_tickers.index.tolist()
+            weights = portfolio_tickers["weights"].tolist()
+            
         # initialize test weight
         
-        if current_choice == 'Timmy':
+        elif current_choice == 'Timmy':
             tickers = []
             weights = []
             for item in portfolio_tickers_timmy:
@@ -80,9 +115,10 @@ def app():
             for item in portfolio_tickers_jimmy:
                 tickers.append(item[0])
                 weights.append(item[1])
-
-        panel_data = data.DataReader(tickers,'yahoo', start_date, end_date)
+                
+        st.write(tickers)
         
+        panel_data = data.DataReader(tickers,'yahoo', start_date, end_date)
         
         # Plotting return series
         closes = panel_data[['Close', 'Adj Close']]
@@ -114,46 +150,74 @@ def app():
         portfolio_breakdown = px.pie(weight_df, values=weight_df['weights'], names = weight_df.index, title="Portfolio Breakdown")
         st.plotly_chart(portfolio_breakdown, use_container_width=True)
         
+        stock_close_dataframe, stock_adjClose_dataframe, stock_return_series = get_dataframe_stock(
+            tickers, start_date, end_date)
+
+     # Get news
+    
+        news_dataframe = get_stock_news_list(tickers)
+        fig = go.Figure(data=[go.Table(
+            header=dict(values=list(news_dataframe.columns),
+                        fill_color='#0E1117', font=dict(size=18),
+                        align='left'),
+            cells=dict(values=[news_dataframe['News Headline'], news_dataframe['News Description'], news_dataframe['Link']],
+                        fill_color='#0E1117', font=dict(size=16),
+                        align='left'
+                        ))
+        ])
+
+        fig.update_layout(
+            margin=dict(l=0, r=0, t=0, b=0, autoexpand=True),
+            paper_bgcolor="#0E1117",
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+
+
+
+
+
+
+
+
 
 #Plotting Portfolio
 
-        st.write("Portfolio Optimisation")
-  
-        N_PORTFOLIOS = 10 ** 5
-        N_DAYS = 252
-        RISKY_ASSETS = tickers
-        RISKY_ASSETS.sort()
-        START_DATE = start_date
-        END_DATE = end_date
+        # st.write("Portfolio Optimisation")
+
+        # N_PORTFOLIOS = 10 ** 5
+        # N_DAYS = 252
+        # RISKY_ASSETS = tickers
+        # RISKY_ASSETS.sort()
+        # START_DATE = start_date
+        # END_DATE = end_date
 
     
-        portfolio_obj = Portfolio(
-           RISKY_ASSETS, START_DATE, END_DATE, N_DAYS, N_PORTFOLIOS)
-        portf_vol_ef, portf_rtns_ef, portf_results_df, final_weights = portfolio_obj.monte_carlo_sim()
+        # portfolio_obj = Portfolio(
+        # RISKY_ASSETS, START_DATE, END_DATE, N_DAYS, N_PORTFOLIOS)
+        # portf_vol_ef, portf_rtns_ef, portf_results_df, final_weights = portfolio_obj.monte_carlo_sim()
 
-
-  
-        efficient_frontier = px.scatter(portf_results_df, title='Efficient Frontier', x='volatility', y = 'returns', color='sharpe_ratio' )
+        # efficient_frontier = px.scatter(portf_results_df, title='Efficient Frontier', x='volatility', y = 'returns', color='sharpe_ratio' )
                 
-        st.plotly_chart(efficient_frontier, use_container_width=True)
+        # st.plotly_chart(efficient_frontier, use_container_width=True)
         
-        # Maximum performance
+        # # Maximum performance
         
-        pie_sharpe_col, sharpe_values_col = st.columns(2)
+        # pie_sharpe_col, sharpe_values_col = st.columns(2)
         
-        max_sharpe_sorted = portf_results_df.sort_values(by=['sharpe_ratio'],ascending=False)
-        max_sharpe_portf = max_sharpe_sorted.head(1) 
-        temp = final_weights[max_sharpe_portf.index]
-        
-        
-        weight_final_df = pd.DataFrame(index=tickers)
-        weight_final_df['weights'] = temp[0]
+        # max_sharpe_sorted = portf_results_df.sort_values(by=['sharpe_ratio'],ascending=False)
+        # max_sharpe_portf = max_sharpe_sorted.head(1) 
+        # temp = final_weights[max_sharpe_portf.index]
         
         
-        max_breakdown = px.pie(weight_final_df, values=weight_final_df['weights'], names = weight_final_df.index, title="Maximum Breakdown")
-        pie_sharpe_col.plotly_chart(max_breakdown, use_container_width=True)
+        # weight_final_df = pd.DataFrame(index=tickers)
+        # weight_final_df['weights'] = temp[0]
         
-        sharpe_values_col.write(max_sharpe_portf)
+        
+        # max_breakdown = px.pie(weight_final_df, values=weight_final_df['weights'], names = weight_final_df.index, title="Maximum Breakdown")
+        # pie_sharpe_col.plotly_chart(max_breakdown, use_container_width=True)
+        
+        # sharpe_values_col.write(max_sharpe_portf)
 
         
 ### WY Codes

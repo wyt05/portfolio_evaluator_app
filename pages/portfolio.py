@@ -97,18 +97,18 @@ class Portfolio:
         if current_price > upper_band:
 
             if determine_trend > 0:
-                message = 'The price has broken past upper band and price is trending upwards. Very positive signal. Recommend BUY/HOLD' + str(determine_trend)
+                message = 'The price has broken past upper band and price is trending upwards. Very positive signal. Recommend BUY/HOLD'
                 points = 2
             else:
-                message = 'The price has broken past upper band, but price is trending downwards. Negative signal. Recommend SELL' + str(determine_trend)
+                message = 'The price has broken past upper band, but price is trending downwards. Negative signal. Recommend SELL'
                 points = -2
 
         elif current_price < lower_band:
             if determine_trend > 0:
-                message = 'The price has broken past lower band but price is trending upwards. Positive signal. Recommend BUY' + str(determine_trend)
+                message = 'The price has broken past lower band but price is trending upwards. Positive signal. Recommend BUY'
                 points = 2
             else:
-                message = 'The price has broken past lower band, and price is trending downwards. Very negative signal. Recommend STRONG SELL to cut losses' + str(determine_trend)
+                message = 'The price has broken past lower band, and price is trending downwards. Very negative signal. Recommend STRONG SELL to cut losses'
                 points = -4
 
         else:
@@ -122,39 +122,39 @@ class Portfolio:
             if price_range['lo_df'] < price_range['up_df'] and price_range['lo_df'] < price_range['md_df']:
                 
                 if determine_trend > 0:
-                    message = 'The price is currently close to oversold but price trending upwards. Indicate BUY: ' + str(determine_trend)
+                    message = 'The price is currently close to oversold but price trending upwards. Indicate BUY: '
                     points = 2
                 else:
-                    message = 'The price is currently close to oversold and price trending downwards. Might break support. Negative Signal. Recommend Hold/Buy' + str(determine_trend)
+                    message = 'The price is currently close to oversold and price trending downwards. Might break support. Negative Signal. Recommend Hold/Buy'
                     points = -1
 
             # If price is closer to upper band compared to mid and lower
             elif price_range['up_df'] < price_range['lo_df'] and price_range['up_df'] < price_range['md_df']:
                 
                 if determine_trend > 0:
-                    message = 'The price is currently close to overbought and price trending upwards, Positive Signal. Recommend Hold/Sell' + str(determine_trend)
+                    message = 'The price is currently close to overbought and price trending upwards, Positive Signal. Recommend Hold/Sell'
                     points = 1
                 else:
-                    message = 'The price is currently close to overbought but price trending downwards. Indicate SELL' + str(determine_trend)
+                    message = 'The price is currently close to overbought but price trending downwards. Indicate SELL'
                     points = -2
 
             # If price is closer to middle band, but above the middle band
             elif price_range['md_df'] < (price_range['up_df'] and price_range['lo_df']) and price_range['up_df'] < price_range['lo_df']:
                 
                 if determine_trend > 0:
-                    message = 'Price is slightly above the middle band, trending upwards. Recommend HOLD sell at closer to upper band' + str(determine_trend)
+                    message = 'Price is slightly above the middle band, trending upwards. Recommend HOLD sell at closer to upper band'
                     points = 0
                 else:
-                    message = 'Price is slightly above the middle band, trending downwards. Recommend weak sell' + str(determine_trend)
+                    message = 'Price is slightly above the middle band, trending downwards. Recommend weak sell'
                     points = -1
 
             # If price is closer to middle band, but below the middle band
             elif price_range['md_df'] < (price_range['up_df'] and price_range['lo_df']) and price_range['lo_df'] < price_range['up_df']:
                 if determine_trend > 0:
-                    message = 'Price is slightly below the middle band, trending upwards. Recommend weak buy' + str(determine_trend)
+                    message = 'Price is slightly below the middle band, trending upwards. Recommend weak buy'
                     points = 1
                 else:
-                    message = 'Price is slightly below the middle band, trending downwards. Recommend HOLD to sell closer to lower band.' + str(determine_trend)
+                    message = 'Price is slightly below the middle band, trending downwards. Recommend HOLD to sell closer to lower band.'
                     points = 0
     
         return message, points

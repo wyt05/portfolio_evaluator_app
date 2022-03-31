@@ -45,34 +45,38 @@ def app():
     
     with st.form(key='stock_selection'):
             portfolio_choice = st.text_input('Place your stock ticker:')
-            #trend_lookback = st.number_input('Number of days to lookback to determine trend:', step=1)
             date_cols = st.columns((1, 1))
             start_date = date_cols[0].date_input('Start Date', start_date_df)
             end_date = date_cols[1].date_input('End Date', end_date_df)
-            cleaned_data_file = st.file_uploader("Choose cleaned sentiment for ARKK")
+            lookback_col = st.columns((1, 1))
+            trend_lookback = lookback_col[0].number_input('Number of days to lookback to determine trend:', step=1)
+            cleaned_data_file = lookback_col[1].file_uploader("Choose cleaned sentiment for ARKK")
             submitted = st.form_submit_button('Submit')
 
     
     if submitted:
         portfolio_item = Portfolio(portfolio_choice, start_date, end_date)
+        no_of_days = end_date - start_date
 
         technical_ind_chart = portfolio_item.get_technical_indicators()
         return_series_chart = portfolio_item.get_return_series()
         sharpe_ratio = portfolio_item.get_sharpe_ratio(0.01)
+        sortino_ratio = portfolio_item.get_sortino_ratio(0.01, no_of_days.days)
 
         #Overview
         st.subheader('Overview')
 
 
         #Annualized Return - show as metrics
-        no_of_days = end_date - start_date
+        
         total_return = return_series_chart['return_series'].tail(1).values
         annualized_return = ((((1+total_return)**(365/no_of_days.days)) - 1)*100).round(2)
         
         #Metrics
-        metric1, metric2 = st.columns(2)
+        metric1, metric2, metrics3 = st.columns(3)
         metric1.metric('Annualized Return', str(annualized_return[0]) + "%")
         metric2.metric('Sharpe Ratio', round(sharpe_ratio, 2))
+        metrics3.metric('Sortino Ratio', sortino_ratio.round(2))
 
         #Stock result
         main_return_series = px.line(
@@ -85,9 +89,9 @@ def app():
         #Technical Indicator results
         st.subheader('Technical Indicators')
 
-        bband_msg, bband_points = portfolio_item.get_technical_result_bbands()
-        rsi_msg, rsi_points = portfolio_item.get_technical_results_rsi()
-        macd_msg, macd_points = portfolio_item.get_technical_results_macd()
+        bband_msg, bband_points = portfolio_item.get_technical_result_bbands(trend_lookback)
+        rsi_msg, rsi_points = portfolio_item.get_technical_results_rsi(trend_lookback)
+        macd_msg, macd_points = portfolio_item.get_technical_results_macd(trend_lookback)
 
         #Display total points
         total_points = bband_points + rsi_points + macd_points

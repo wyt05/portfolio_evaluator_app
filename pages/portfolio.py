@@ -12,6 +12,7 @@ import plotly.graph_objects as go
 import requests
 from bs4 import BeautifulSoup
 from streamlit_tags import st_tags
+from torch import dtype
 import yfinance as yf
 import pandas_ta as ta
 
@@ -36,6 +37,18 @@ def trend_rev(column_name, df, trend_detect='down'):
                 break
     determine_trend.reverse()
     return determine_trend
+
+def trend_detection(column_name, df, lookback):
+    rev_df = df.sort_index(ascending=False)
+    current_val = rev_df.iloc[0][column_name]
+    lookback_val = rev_df.iloc[lookback][column_name]
+
+    #Determine slope
+    slope = (current_val - lookback_val) / lookback
+
+    return slope
+
+
 
 class Portfolio:
     def __init__(self, symbols, start_date, end_date, n_days=0, n_portfolio=0):
@@ -65,7 +78,7 @@ class Portfolio:
 
         return technical_ind
 
-    def get_technical_result_bbands(self):
+    def get_technical_result_bbands(self, lookback):
         #Points will be tabulated to return a signal
         #2 is strong buy, 1 is buy, 0 is hold, -1 is sell and -2 is strong sell
 
@@ -78,13 +91,25 @@ class Portfolio:
         lower_band = technical_ind.tail(1)['BBL_20_2.0'].values[0]
         sma_20 = technical_ind.tail(1)['BBM_20_2.0'].values[0]
 
+        determine_trend = trend_detection('Close', technical_ind, lookback)
+        print(determine_trend)
+
         if current_price > upper_band:
-            message = 'The price has broken past upper band. INDICATE STRONG BUY'
-            points = 2
+
+            if determine_trend > 0:
+                message = 'The price has broken past upper band and price is trending upwards. Very positive signal. Recommend BUY/HOLD' + str(determine_trend)
+                points = 2
+            else:
+                message = 'The price has broken past upper band, but price is trending downwards. Negative signal. Recommend SELL' + str(determine_trend)
+                points = -2
 
         elif current_price < lower_band:
-            message = 'The price has broken past lower band. INDICATE STRONG SELL'
-            points = -2
+            if determine_trend > 0:
+                message = 'The price has broken past lower band but price is trending upwards. Positive signal. Recommend BUY' + str(determine_trend)
+                points = 2
+            else:
+                message = 'The price has broken past lower band, and price is trending downwards. Very negative signal. Recommend STRONG SELL to cut losses' + str(determine_trend)
+                points = -4
 
         else:
 
@@ -93,53 +118,82 @@ class Portfolio:
             price_range['lo_df'] = abs(current_price - lower_band)
             price_range['md_df'] = abs(sma_20 - current_price)
 
-            print(price_range)
-
             # If price is closer to lower band compared to mid and upper
             if price_range['lo_df'] < price_range['up_df'] and price_range['lo_df'] < price_range['md_df']:
-                message = 'The price is currently close to oversold. INDICATE BUY'
-                points = 1
+                
+                if determine_trend > 0:
+                    message = 'The price is currently close to oversold but price trending upwards. Indicate BUY: ' + str(determine_trend)
+                    points = 2
+                else:
+                    message = 'The price is currently close to oversold and price trending downwards. Might break support. Negative Signal. Recommend Hold/Buy' + str(determine_trend)
+                    points = -1
 
             # If price is closer to upper band compared to mid and lower
             elif price_range['up_df'] < price_range['lo_df'] and price_range['up_df'] < price_range['md_df']:
-                message = 'A price is currently close to overbought, INDICATE SELL'
-                points = -1
+                
+                if determine_trend > 0:
+                    message = 'The price is currently close to overbought and price trending upwards, Positive Signal. Recommend Hold/Sell' + str(determine_trend)
+                    points = 1
+                else:
+                    message = 'The price is currently close to overbought but price trending downwards. Indicate SELL' + str(determine_trend)
+                    points = -2
 
             # If price is closer to middle band, but above the middle band
             elif price_range['md_df'] < (price_range['up_df'] and price_range['lo_df']) and price_range['up_df'] < price_range['lo_df']:
-                message = 'Price is slightly above the middle band., INDICATE HOLD'
-                points = 0
+                
+                if determine_trend > 0:
+                    message = 'Price is slightly above the middle band, trending upwards. Recommend HOLD sell at closer to upper band' + str(determine_trend)
+                    points = 0
+                else:
+                    message = 'Price is slightly above the middle band, trending downwards. Recommend weak sell' + str(determine_trend)
+                    points = -1
 
             # If price is closer to middle band, but below the middle band
             elif price_range['md_df'] < (price_range['up_df'] and price_range['lo_df']) and price_range['lo_df'] < price_range['up_df']:
-                message = 'Price is slightly below the middle band., INDICATE HOLD'
-                points = 0
+                if determine_trend > 0:
+                    message = 'Price is slightly below the middle band, trending upwards. Recommend weak buy' + str(determine_trend)
+                    points = 1
+                else:
+                    message = 'Price is slightly below the middle band, trending downwards. Recommend HOLD to sell closer to lower band.' + str(determine_trend)
+                    points = 0
     
         return message, points
     
-    def get_technical_results_rsi(self):
+    def get_technical_results_rsi(self, lookback):
         points = 0
         message = ''
         technical_ind = self.get_technical_indicators()
 
         rsi_check = technical_ind.tail(1)['RSI_14'].values[0]
 
+        determine_trend = trend_detection('RSI_14', technical_ind, lookback)
+
         if rsi_check > 70:
             message = 'The stock is overbought, above 70. INDICATE SELL'
-            points = -2
+            points = -1
         elif rsi_check < 30:
             message = 'The stock is oversold, below 30. INDICATE BUY'
-            points = 2
+            points = 1
         else:
             
             #If RSI closer to lower
             if rsi_check > 55 and rsi_check < 70:
-                message = "Stock close to overbought, but it could be an uptrend"
-                points =  -1
+
+                if determine_trend > 0:
+                    message = "Stock close to overbought, trending upwards. Might be time to sell"
+                    points =  -1
+                else:
+                    message = "Stock close to overbought, but trending downwards. Might be time to hold"
+                    points = 0
 
             elif rsi_check < 45 and rsi_check > 30:
-                message = "Stock close to oversold, but it could be a downtrend"
-                points = 1
+
+                if determine_trend > 0:
+                    message = "Stock close to oversold, but trending upwards, might be time to hold"
+                    points =  0
+                else:
+                    message = "Stock close to oversold, trending downwards, might be time to buy"
+                    points = 1
 
             else:
                 message = "Stock currently close to neutral"
@@ -147,7 +201,7 @@ class Portfolio:
         
         return message, points
 
-    def get_technical_results_macd(self):
+    def get_technical_results_macd(self, lookback):
         points = 0
         message = ''
         technical_ind = self.get_technical_indicators()
@@ -156,9 +210,9 @@ class Portfolio:
 
         #if h is less than 0, it is currently in downtrend
         if macd_h_curr < 0:
-            determine_trend = trend_rev('MACDh_12_26_9', technical_ind, 'down')
+            determine_trend = trend_detection('MACDh_12_26_9', technical_ind, lookback)
             
-            if len(determine_trend) == 1:
+            if determine_trend > 0:
                 message = "Strong downtrend, indicate SELL"
                 points = -2
             else:
@@ -169,11 +223,11 @@ class Portfolio:
             determine_trend = []
 
             #Detects REVERSAL 
-            determine_trend = trend_rev('MACDh_12_26_9', technical_ind, 'up')
+            determine_trend = trend_detection('MACDh_12_26_9', technical_ind, lookback)
 
             #If only one item here, means it's GOING UP, strong uptrend, 
             #if there's a trend detected, it means the price is weakening
-            if len(determine_trend) == 1:
+            if determine_trend > 0:
                 message = "Strong Uptrend, indicate BUY"
                 points = 2
             else:
@@ -196,11 +250,21 @@ class Portfolio:
 
         returns_ts['excess_return'] = returns_ts['pct_change'] - returns_ts['riskfree_rate']
 
-        print(returns_ts)
-
         sharpe_ratio = ((avg_daily_ret - avg_rf_ret) /returns_ts['excess_return'].std())*np.sqrt(252)
 
         return sharpe_ratio
+    
+    def get_sortino_ratio(self, risk_free_rate, day_difference):
+        returns_ts = self.get_pct_change()
+        return_series = (1 + returns_ts).cumprod() - 1
+
+        total_return = return_series.tail(1)
+        annualized_return = ((1+total_return)**(365/day_difference)) - 1
+        #Downward deviation
+        dd = return_series[return_series<0].std()*np.sqrt(252)
+        sortino_ratio = (annualized_return - risk_free_rate) / dd
+
+        return sortino_ratio.values[0]
 
     def get_close_dataframe(self):
 

@@ -142,7 +142,7 @@ class Portfolio:
             elif price_range['md_df'] < (price_range['up_df'] and price_range['lo_df']) and price_range['up_df'] < price_range['lo_df']:
                 
                 if determine_trend > 0:
-                    message = 'Price is slightly above the middle band, trending upwards. Recommend HOLD sell at closer to upper band'
+                    message = 'Price is slightly above the middle band, trending upwards. Recommend HOLD/sell at closer to upper band'
                     points = 0
                 else:
                     message = 'Price is slightly above the middle band, trending downwards. Recommend weak sell'
@@ -154,7 +154,7 @@ class Portfolio:
                     message = 'Price is slightly below the middle band, trending upwards. Recommend weak buy'
                     points = 1
                 else:
-                    message = 'Price is slightly below the middle band, trending downwards. Recommend HOLD to sell closer to lower band.'
+                    message = 'Price is slightly below the middle band, trending downwards. Recommend HOLD to buy closer to lower band.'
                     points = 0
     
         return message, points
@@ -213,11 +213,11 @@ class Portfolio:
             determine_trend = trend_detection('MACDh_12_26_9', technical_ind, lookback)
             
             if determine_trend > 0:
+                message = "Weakening downtrend, indicate BUY"
+                points = 1
+            else:
                 message = "Strong downtrend, indicate SELL"
                 points = -2
-            else:
-                message = "Weakening downtrend, indicate bullish, - BUY"
-                points = 1
             
         elif macd_h_curr > 0:
             determine_trend = []

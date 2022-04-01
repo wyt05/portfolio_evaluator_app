@@ -16,12 +16,8 @@ from bs4 import BeautifulSoup
 from streamlit_tags import st_tags
 import yfinance as yf
 from pages.portfolio import Portfolio
+from pages.sentiment import Sentiment_Class
 from io import BytesIO
-
-
-import nltk
-from nltk.sentiment.vader import SentimentIntensityAnalyzer
-nltk.download('vader_lexicon')
 
 def get_sentimental_label(val):
   if (val <= 1.0 and val >= 0.6):
@@ -114,27 +110,31 @@ def app():
         macd_col.plotly_chart(macd_graph, use_container_width=True)
         macd_col.success(macd_msg)
 
-        #Sentiment Analysis
-        if cleaned_data_file is not None:
-            data_file = pd.read_csv(cleaned_data_file)
+        st.subheader('News Sentiment Analysis')
 
-            sentiment = SentimentIntensityAnalyzer()
+        news_obj = Sentiment_Class(portfolio_choice)
+        news_dataframe = news_obj.downloadDf
+        news_sentiment = news_obj.sentiment_analysis_df()
 
-            data_file['sentiment'] = data_file.title.apply(lambda x: sentiment.polarity_scores(x))
-            data_file.sentiment = data_file.sentiment.apply(pd.Series)['compound']
+        re_fig = go.Figure(data=[go.Table(
+                header=dict(values=list(news_dataframe.columns),
+                            fill_color='#0E1117', font=dict(size=18),
+                            align='left'),
+                cells=dict(values=[news_dataframe['Time'], news_dataframe['News Reporter'], news_dataframe['News Headline'], news_dataframe['URL']],
+                           fill_color='#0E1117', font=dict(size=16),
+                           align='left'
+                           ))
+            ])
 
-            data_file['sentiment_class'] = data_file['sentiment'].apply(get_sentimental_label)
-            data_file.head()
+        re_fig.update_layout(
+            margin=dict(l=0, r=0, t=0, b=0, autoexpand=True),
+            paper_bgcolor="#0E1117",
+        )
 
-            sentiment_2021 = data_file
-            sentiment_2021[['title','date','sentiment','sentiment_class']].sort_values('sentiment', ascending=False).head(10)
+        st.plotly_chart(re_fig, use_container_width=True)
+        
+        st.dataframe(news_sentiment)
 
-            sentiment_overtime = px.line(sentiment_2021, x=sentiment_2021.month, y=sentiment_2021.sentiment)
-
-            st.plotly_chart(sentiment_overtime)
-
-        else:
-            st.write("Nothing")
 
 
         

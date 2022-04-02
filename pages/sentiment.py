@@ -157,5 +157,7 @@ class Sentiment_Class:
         cleaned_final = self.cleaning_secondary(cleaned_df)
         sentiment_df = self.sentiment_analyzer(cleaned_final,column_applied_df = "final_sentiment_cleaned") #other_column is generally time field in df
 
-        return sentiment_df
+        vadar_compound_score = sentiment_df['vadar_compound'].sum()
+
+        return sentiment_df, vadar_compound_score
         

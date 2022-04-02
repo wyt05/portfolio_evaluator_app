@@ -114,7 +114,19 @@ def app():
 
         news_obj = Sentiment_Class(portfolio_choice)
         news_dataframe = news_obj.downloadDf
-        news_sentiment = news_obj.sentiment_analysis_df()
+        news_sentiment, vadar_compound_score = news_obj.sentiment_analysis_df()
+
+        total_news = news_sentiment.shape[0]
+        average_vadar = vadar_compound_score / total_news
+
+        score_met1, score_met2 = st.columns(2)
+        score_met1.metric('Total Score:', vadar_compound_score)
+        score_met2.metric('Average Score:', average_vadar)
+        
+        if average_vadar > 0:
+          st.success("News are positive")
+        elif average_vadar < 0:
+          st.success("News are negative")
 
         re_fig = go.Figure(data=[go.Table(
                 header=dict(values=list(news_dataframe.columns),

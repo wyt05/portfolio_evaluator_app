@@ -82,6 +82,37 @@ def app():
 
         st.plotly_chart(main_return_series)
 
+        #Company info
+        response = requests.get("https://financialmodelingprep.com/api/v3/income-statement/"+portfolio_choice+"?limit=120&apikey=8f5e10f7e8e43ef7fe0614a0d98b1503")
+        jsonResponse = response.json()
+        
+        if len(jsonResponse) != 0:
+        
+          year_list = []
+          profit_list = []
+          for i in range(len(jsonResponse)):
+                profit_list.append(jsonResponse[i]["grossProfit"])
+                year_list.append(jsonResponse[i]["calendarYear"]) 
+          
+          income_df = pd.DataFrame(index=year_list)
+          income_df["profit"] = profit_list
+          income_df.sort_index(ascending = True)
+          return_plot = px.line(title='Portfolio Return', x=income_df.index, y=income_df["profit"])
+          
+          return_plot.update_layout(
+              title="Profits",
+              xaxis_title="Time",
+              yaxis_title="Profit",
+          )
+          
+          st.plotly_chart(return_plot, use_container_width=True)
+        
+          max_col1, max_col2, max_col3= st.columns(3)
+        
+          max_col1.metric('Net Income Ratio', str(jsonResponse[0]["netIncomeRatio"]))
+          max_col2.metric('Earning Per Share', str(jsonResponse[0]["eps"]))
+          max_col3.metric('Profit', str(jsonResponse[0]["grossProfit"]))
+        
         #Technical Indicator results
         st.subheader('Technical Indicators')
 

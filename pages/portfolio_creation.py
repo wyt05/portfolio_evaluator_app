@@ -88,11 +88,15 @@ def app():
             panel_data = data.DataReader(symbols,'yahoo', start_date, end_date)
             
             st.write("Portfolio Performance")
+            no_of_days = end_date - start_date
             portf_rtns = return_series_portfolio.tail(1).item()
             portf_sharpe_ratio = (portf_rtns - 0.02)/return_series_portfolio.std()
             
-            portf_vol = return_series_portfolio.std()
-            max_col1, max_col2, max_col3 = st.columns(3)
+            portf_vol = np.sqrt(np.log(return_series_portfolio / return_series_portfolio.shift(1)).var()) * np.sqrt(252)
+            log_returns = np.log(return_series_portfolio / return_series_portfolio.shift(1))
+            portf_kurt = log_returns.kurtosis()
+            portf_skew = log_returns.skew()
+            max_col1, max_col2, max_col3,max_col4, max_col5 = st.columns(5)
             
             # st.write(portf_vol)
             # st.write(portf_sharpe_ratio)
@@ -100,7 +104,8 @@ def app():
             max_col1.metric('Returns', str(round(portf_rtns,2) * 100)  + "%")
             max_col2.metric('Volatility', str(round(portf_vol,2) * 100) + "%")
             max_col3.metric('Sharpe Ratio', round(portf_sharpe_ratio,2))
-            
+            max_col4.metric('Kurtosis', round(portf_kurt,2))
+            max_col5.metric('Skewness', round(portf_skew,2))
             
             # Plotting return series
             closes = panel_data[['Close', 'Adj Close']]

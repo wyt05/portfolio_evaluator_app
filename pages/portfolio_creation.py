@@ -53,15 +53,18 @@ def convert_float(weight_list):
     return ret_list
 
 def app():
+    st.title("Portfolio Creation Page")
+    st.write("Stonks only go up")
+    
     with st.form(key='stock_selection'):
-        st.title("Portfolio Evaluator Page")
-        st.write("Stonks only go up")
+        
         symbols = st_tags(label="Choose some stocks to add to a portfolio",
                             text='Press enter to add more',
                             maxtags=12)
         port_weight = st_tags(label="type in your desired weight",
                                 text='Press enter to add more',
                                 maxtags=12)
+        port_weight_equalize = st.checkbox('Equalize weight?')
         date_cols = st.columns((1, 1))
         start_date = date_cols[0].date_input('Start Date')
         end_date = date_cols[1].date_input('End Date')
@@ -69,9 +72,7 @@ def app():
             
     if submitted:
         
-        
-        
-        if len(symbols) >= len(port_weight) and weight_counter(port_weight) == 1:        
+        if len(symbols) >= len(port_weight) and (weight_counter(port_weight) == 1 or port_weight_equalize == True):        
             # Portfolio Creation
             N_PORTFOLIOS = 10 ** 5
             N_DAYS = 252
@@ -85,7 +86,9 @@ def app():
             port_weight = convert_float(port_weight)
             
             #VISUALISE CURRENT WEIGHT
-            panel_data = data.DataReader(symbols,'yahoo', start_date, end_date)
+            #panel_data = data.DataReader(symbols,'yahoo', start_date, end_date)
+            portfolio_obj = Portfolio(symbols, start_date, end_date)
+            panel_data = portfolio_obj.portfolio_rst
             
             st.write("Portfolio Performance")
             no_of_days = end_date - start_date
@@ -112,6 +115,19 @@ def app():
 
             return_series_adj = (closes['Adj Close'].pct_change()+ 1).cumprod() - 1
 
+            #Block of IF code to check if user want to equalize weight
+
+            if port_weight_equalize == True:
+                print('working')
+                stock_weight = []
+                number_of_stock = len(symbols)
+                equalized = 1 / number_of_stock
+                for i in range(number_of_stock):
+                    stock_weight.append(equalized)
+                
+                port_weight = stock_weight
+
+
             weighted_return_series = port_weight * (return_series_adj)
 
             return_series_portfolio = weighted_return_series.sum(axis=1)
@@ -133,6 +149,8 @@ def app():
             ## Plotting Pie Chart
             
             weight_df = pd.DataFrame(index=symbols)
+
+            
             weight_df["weights"] = port_weight
             
             portfolio_breakdown = px.pie(weight_df, values=weight_df['weights'], names = weight_df.index, title="Portfolio Breakdown")
@@ -147,8 +165,6 @@ def app():
                     
             st.plotly_chart(efficient_frontier, use_container_width=True)
 
-
-
             # Print the Maximum Results
             max_sharpe_ind = np.argmax(portf_results_df.sharpe_ratio)
             max_sharpe_portf = portf_results_df.loc[max_sharpe_ind]
@@ -160,10 +176,6 @@ def app():
             max_col1.metric('Returns', str(round(max_sharpe_portf[0] * 100, 2)) + "%")
             max_col2.metric('Volatility', str(round(max_sharpe_portf[1] * 100, 2)) + "%")
             max_col3.metric('Sharpe Ratio', round(max_sharpe_portf[2], 2))
-            
-
-            
-            
             
 
             max_sharpe_sorted = portf_results_df.sort_values(by=['sharpe_ratio'],ascending=False)

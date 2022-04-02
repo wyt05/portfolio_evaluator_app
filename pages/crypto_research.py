@@ -18,6 +18,7 @@ import yfinance as yf
 from pages.portfolio import Portfolio
 from pages.sentiment import Sentiment_Class
 from io import BytesIO
+import pyfolio as pf
 
 def get_sentimental_label(val):
   if (val <= 1.0 and val >= 0.6):
@@ -33,7 +34,7 @@ def get_sentimental_label(val):
 
 
 def app():
-    st.title("Portfolio Evaluator Page")
+    st.title("Stock Evaluator Page")
     st.write("Stonks only go up")
 
     start_date_df = datetime(2021, 1, 1)
@@ -56,8 +57,12 @@ def app():
 
         technical_ind_chart = portfolio_item.get_technical_indicators()
         return_series_chart = portfolio_item.get_return_series()
-        sharpe_ratio = portfolio_item.get_sharpe_ratio(0.01)
-        sortino_ratio = portfolio_item.get_sortino_ratio(0.01, no_of_days.days)
+        #sharpe_ratio = portfolio_item.get_sharpe_ratio(0.01)
+        sharpe_ratio_alt = portfolio_item.get_alt_sharpe_ratio()
+        #sortino_ratio = portfolio_item.get_sortino_ratio(0.01, no_of_days.days)
+        sortino_ratio = portfolio_item.get_alt_sortino_ratio()
+        kurtosis = portfolio_item.get_kurtosis()
+        get_log_return = portfolio_item.get_log_returns()
 
         #Overview
         st.subheader('Overview')
@@ -67,12 +72,18 @@ def app():
         
         total_return = return_series_chart['return_series'].tail(1).values
         annualized_return = ((((1+total_return)**(365/no_of_days.days)) - 1)*100).round(2)
+        value_at_risk = str(abs(round(return_series_chart['return_series'].min()*100, 2))) + "%"
         
         #Metrics
-        metric1, metric2, metrics3 = st.columns(3)
-        metric1.metric('Annualized Return', str(annualized_return[0]) + "%")
-        metric2.metric('Sharpe Ratio', round(sharpe_ratio, 2))
+        metrics1, metrics2, metrics3, metrics4 = st.columns(4)
+        metrics1.metric('Annualized Return', str(annualized_return[0]) + "%")
+        #metric2.metric('Sharpe Ratio', round(sharpe_ratio, 2))
+        metrics2.metric('Sharpe Ratio', round(sharpe_ratio_alt, 2))
         metrics3.metric('Sortino Ratio', sortino_ratio.round(2))
+        #metrics4.metric('30 Day Kurtosis', round(kurtosis.tail(1).values[0], 2))
+        metrics4.metric('Full Range Kurtosis', round(get_log_return.kurtosis(), 2))
+        #metrics6.metric('Maximum Value at Risk:', value_at_risk)
+        
 
         #Stock result
         main_return_series = px.line(
@@ -119,6 +130,8 @@ def app():
         bband_msg, bband_points = portfolio_item.get_technical_result_bbands(trend_lookback)
         rsi_msg, rsi_points = portfolio_item.get_technical_results_rsi(trend_lookback)
         macd_msg, macd_points = portfolio_item.get_technical_results_macd(trend_lookback)
+
+        pf.create_simple_tear_sheet(returns=return_series_chart['return_series'])
 
         #Display total points
         total_points = bband_points + rsi_points + macd_points
@@ -177,6 +190,13 @@ def app():
         st.plotly_chart(re_fig, use_container_width=True)
         
         st.dataframe(news_sentiment)
+
+        st.subheader("LSTM Prediction")
+        st.write("The prediction model will attempt to predict changes in price tomorrow.")
+
+
+
+        
 
 
 

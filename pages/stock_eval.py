@@ -13,6 +13,7 @@ import requests
 from bs4 import BeautifulSoup
 from streamlit_tags import st_tags
 import yfinance as yf
+import pyfolio as pf
 
 # https://discuss.streamlit.io/t/new-component-streamlit-tags-a-new-way-to-do-add-tags-and-enter-keywords/10810
 #https://discuss.streamlit.io/t/part-of-page-is-getting-refreshed-on-dropdown-selection/3336

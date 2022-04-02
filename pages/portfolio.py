@@ -49,7 +49,6 @@ def trend_detection(column_name, df, lookback):
     return slope
 
 
-
 class Portfolio:
     def __init__(self, symbols, start_date, end_date, n_days=0, n_portfolio=0):
         self.symbols = symbols
@@ -77,6 +76,30 @@ class Portfolio:
         technical_ind = technical_ind.merge(bbands, on='Date')
 
         return technical_ind
+    
+    def get_kurtosis(self):
+        technical_ind = self.portfolio_rst
+        kurtosis = ta.kurtosis(technical_ind['Close'])
+
+        return kurtosis
+    
+    def get_alt_sortino_ratio(self):
+        technical_ind = self.portfolio_rst
+        sortino = ta.sortino_ratio(technical_ind['Close'])
+
+        return sortino
+    
+    def get_alt_sharpe_ratio(self):
+        technical_ind = self.portfolio_rst
+        sortino = ta.sharpe_ratio(technical_ind['Close'])
+
+        return sortino
+    
+    def get_log_returns(self):
+        technical_ind = self.portfolio_rst
+        log_returns = np.log(technical_ind['Close'] / technical_ind['Close'].shift(1))
+
+        return log_returns
 
     def get_technical_result_bbands(self, lookback):
         #Points will be tabulated to return a signal

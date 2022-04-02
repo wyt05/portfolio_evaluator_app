@@ -155,21 +155,22 @@ def app():
         return_series_col.write(return_series_adj)
         
         # Caculating Ration
-        # no_of_days = end_date - start_date
-        # avg_returns = return_series_portfolio.mean() * no_of_days
+
+            
+        st.write("Portfolio Performance")
+        no_of_days = end_date - start_date
+        portf_rtns = return_series_portfolio.tail(1).item()
+        portf_sharpe_ratio = (portf_rtns - 0.02)/return_series_portfolio.std()
         
-        # portf_rtns = np.dot(weights, avg_returns)
-        
-        # portf_vol = return_series_portfolio.std()
-        # portf_sharpe_ratio = portf_rtns / portf_vol
-        # max_col1, max_col2, max_col3 = st.columns(3)
+        portf_vol = return_series_portfolio.std()
+        max_col1, max_col2, max_col3 = st.columns(3)
         
         # st.write(portf_vol)
         # st.write(portf_sharpe_ratio)
-        # st.write(portf_rtns)
-        # max_col1.metric('Returns', portf_rtns + "%")
-        # max_col2.metric('Volatility', portf_vol + "%")
-        # max_col3.metric('Sharpe Ratio', portf_sharpe_ratio)
+        # 
+        max_col1.metric('Returns', str(round(portf_rtns,2) * 100)  + "%")
+        max_col2.metric('Volatility', str(round(portf_vol,2) * 100) + "%")
+        max_col3.metric('Sharpe Ratio', round(portf_sharpe_ratio,2))
         
         ## Plotting Pie Chart
         
@@ -245,43 +246,42 @@ def app():
             macd_col.plotly_chart(macd_graph, use_container_width=True)
             macd_col.success(macd_msg)
 
-            # st.subheader('News Sentiment Analysis')
+            st.subheader('News Sentiment Analysis')
 
-            # news_obj = Sentiment_Class(portfolio_choice)
-            # news_dataframe = news_obj.downloadDf
-            # news_sentiment, vadar_compound_score = news_obj.sentiment_analysis_df()
+            news_obj = Sentiment_Class(item)
+            news_dataframe = news_obj.downloadDf
+            news_sentiment, vadar_compound_score = news_obj.sentiment_analysis_df()
 
-            # total_news = news_sentiment.shape[0]
-            # average_vadar = vadar_compound_score / total_news
+            total_news = news_sentiment.shape[0]
+            average_vadar = vadar_compound_score / total_news
 
-            # score_met1, score_met2 = st.columns(2)
-            # score_met1.metric('Total Score:', vadar_compound_score)
-            # score_met2.metric('Average Score:', average_vadar)
+            score_met1, score_met2 = st.columns(2)
+            score_met1.metric('Total Score:', vadar_compound_score)
+            score_met2.metric('Average Score:', average_vadar)
             
-            # if average_vadar > 0:
-            #     st.success("News are positive")
-            # elif average_vadar < 0:
-            #     st.success("News are negative")
+            if average_vadar > 0:
+                st.success("News are positive")
+            elif average_vadar < 0:
+                st.success("News are negative")
 
-            # re_fig = go.Figure(data=[go.Table(
-            #         header=dict(values=list(news_dataframe.columns),
-            #                     fill_color='#0E1117', font=dict(size=18),
-            #                     align='left'),
-            #         cells=dict(values=[news_dataframe['Time'], news_dataframe['News Reporter'], news_dataframe['News Headline'], news_dataframe['URL']],
-            #                 fill_color='#0E1117', font=dict(size=16),
-            #                 align='left'
-            #                 ))
-            #     ])
+            re_fig = go.Figure(data=[go.Table(
+                    header=dict(values=list(news_dataframe.columns),
+                                fill_color='#0E1117', font=dict(size=18),
+                                align='left'),
+                    cells=dict(values=[news_dataframe['Time'], news_dataframe['News Reporter'], news_dataframe['News Headline'], news_dataframe['URL']],
+                            fill_color='#0E1117', font=dict(size=16),
+                            align='left'
+                            ))
+                ])
 
-            # re_fig.update_layout(
-            #     margin=dict(l=0, r=0, t=0, b=0, autoexpand=True),
-            #     paper_bgcolor="#0E1117",
-            # )
+            re_fig.update_layout(
+                margin=dict(l=0, r=0, t=0, b=0, autoexpand=True),
+                paper_bgcolor="#0E1117",
+            )
 
-            # st.plotly_chart(re_fig, use_container_width=True)
+            st.plotly_chart(re_fig, use_container_width=True)
             
-            # st.dataframe(news_sentiment)
-        
-        
+            st.dataframe(news_sentiment)
+              
 
         

@@ -87,6 +87,21 @@ def app():
             #VISUALISE CURRENT WEIGHT
             panel_data = data.DataReader(symbols,'yahoo', start_date, end_date)
             
+            st.write("Portfolio Performance")
+            portf_rtns = return_series_portfolio.tail(1).item()
+            portf_sharpe_ratio = (portf_rtns - 0.02)/return_series_portfolio.std()
+            
+            portf_vol = return_series_portfolio.std()
+            max_col1, max_col2, max_col3 = st.columns(3)
+            
+            # st.write(portf_vol)
+            # st.write(portf_sharpe_ratio)
+            # 
+            max_col1.metric('Returns', str(round(portf_rtns,2) * 100)  + "%")
+            max_col2.metric('Volatility', str(round(portf_vol,2) * 100) + "%")
+            max_col3.metric('Sharpe Ratio', round(portf_sharpe_ratio,2))
+            
+            
             # Plotting return series
             closes = panel_data[['Close', 'Adj Close']]
 
@@ -107,6 +122,7 @@ def app():
             chart_col, return_series_col = st.columns(2)
             
             chart_col.plotly_chart(return_plot, use_container_width=True)
+            return_series_col.subheader("Return Series")
             return_series_col.write(return_series_adj)
             
             ## Plotting Pie Chart
@@ -289,7 +305,7 @@ def app():
                     st.session_state[port_name[0]] = weight_df
                           
                     
-            st.write(st.session_state)
+            st.success("It has been stored!")
             
 
 

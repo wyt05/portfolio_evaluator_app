@@ -44,9 +44,9 @@ def app():
             date_cols = st.columns((1, 1))
             start_date = date_cols[0].date_input('Start Date', start_date_df)
             end_date = date_cols[1].date_input('End Date', end_date_df)
-            lookback_col = st.columns((1, 1))
-            trend_lookback = lookback_col[0].number_input('Number of days to lookback to determine trend:', step=1)
-            cleaned_data_file = lookback_col[1].file_uploader("Choose cleaned sentiment for ARKK")
+            #lookback_col = st.columns((1, 1))
+            trend_lookback = st.number_input('Number of days to lookback to determine trend:', step=1)
+            #cleaned_data_file = lookback_col[1].file_uploader("Choose cleaned sentiment for ARKK")
             submitted = st.form_submit_button('Submit')
 
     

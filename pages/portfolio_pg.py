@@ -1,3 +1,4 @@
+from operator import index
 from mechanize import Item
 from soupsieve import select
 import streamlit as st
@@ -16,6 +17,9 @@ from streamlit_tags import st_tags
 import yfinance as yf
 from pages.portfolio import Portfolio
 from io import BytesIO
+import pandas_ta as ta
+from pages.portfolio import Portfolio
+from pages.sentiment import Sentiment_Class
 
 def get_dataframe_stock(ticker, start_date, end_date):
     start_date = start_date
@@ -57,12 +61,13 @@ def get_stock_news_list(tickers):
 
     return news_dataframe
 
-
 def app():
-    
     st.title("Portfolio Evaluator Page")
     st.write("Stonks only go up")
     
+    
+    start_date_df = datetime(2021, 1, 1)
+    end_date_df = datetime(2021, 12, 31)
     #st.write(st.session_state.key)
     
     all_portfolio = ["Timmy", "Jimmy"]
@@ -75,8 +80,8 @@ def app():
                         suggestions=all_portfolio)
         
         date_cols = st.columns((1, 1))
-        start_date = date_cols[0].date_input('Start Date')
-        end_date = date_cols[1].date_input('End Date')
+        start_date = date_cols[0].date_input('Start Date', start_date_df)
+        end_date = date_cols[1].date_input('End Date', end_date_df)
         submitted = st.form_submit_button('Submit')
 
     if submitted:
@@ -93,7 +98,7 @@ def app():
             portfolio_tickers = st.session_state[portfolio_choice[0]]
         
         else:
-            st.write('This person is not your customers')
+            st.warning('This person is not your customers')
             
         #session data
         if portfolio_choice[0] in st.session_state:
@@ -116,7 +121,6 @@ def app():
                 tickers.append(item[0])
                 weights.append(item[1])
                 
-        st.write(tickers)
         
         panel_data = data.DataReader(tickers,'yahoo', start_date, end_date)
         
@@ -129,8 +133,15 @@ def app():
 
         return_series_portfolio = weighted_return_series.sum(axis=1)
         
-        return_plot = px.line(title='Portfolio Return')
-        return_plot.add_scatter(x=return_series_portfolio.index, y=return_series_portfolio, name="Portfolio_Returns")
+        return_plot = px.line(title='Portfolio Return', x=return_series_portfolio.index, y=return_series_portfolio)
+        
+        return_plot.update_layout(
+            title="Portfolio Return",
+            xaxis_title="Time",
+            yaxis_title="Return Series",
+            legend_title="Stocks",
+        )
+
         
         for item in tickers:
             return_plot.add_scatter(x=return_series_adj.index, y=return_series_adj[item], name=item)
@@ -140,7 +151,25 @@ def app():
         chart_col, return_series_col = st.columns(2)
         
         chart_col.plotly_chart(return_plot, use_container_width=True)
+        return_series_col.subheader("Return Series")
         return_series_col.write(return_series_adj)
+        
+        # Caculating Ration
+        # no_of_days = end_date - start_date
+        # avg_returns = return_series_portfolio.mean() * no_of_days
+        
+        # portf_rtns = np.dot(weights, avg_returns)
+        
+        # portf_vol = return_series_portfolio.std()
+        # portf_sharpe_ratio = portf_rtns / portf_vol
+        # max_col1, max_col2, max_col3 = st.columns(3)
+        
+        # st.write(portf_vol)
+        # st.write(portf_sharpe_ratio)
+        # st.write(portf_rtns)
+        # max_col1.metric('Returns', portf_rtns + "%")
+        # max_col2.metric('Volatility', portf_vol + "%")
+        # max_col3.metric('Sharpe Ratio', portf_sharpe_ratio)
         
         ## Plotting Pie Chart
         
@@ -173,212 +202,86 @@ def app():
         
         st.plotly_chart(fig, use_container_width=True)
 
+        #Technical Indicator results
+        for item in tickers:
+            
+            st.subheader("Technical Analysis for " + item)
+            
+            portfolio_item = Portfolio(item, start_date, end_date)
+            no_of_days = end_date - start_date
 
+            technical_ind_chart = portfolio_item.get_technical_indicators()
+            return_series_chart = portfolio_item.get_return_series()
 
+            #Annualized Return - show as metrics
+            
+            total_return = return_series_chart['return_series'].tail(1).values
+            annualized_return = ((((1+total_return)**(365/no_of_days.days)) - 1)*100).round(2)
+            
 
+            #Technical Indicator results
+            bband_msg, bband_points = portfolio_item.get_technical_result_bbands(10)
+            rsi_msg, rsi_points = portfolio_item.get_technical_results_rsi(10)
+            macd_msg, macd_points = portfolio_item.get_technical_results_macd(10)
 
+            #Display total points
+            total_points = bband_points + rsi_points + macd_points
+            print(total_points)
+            st.success('Total Score: ' + str(total_points))
 
+            #Display the technical indicator charts & message
+            bb_band_graph = px.line(technical_ind_chart, x=technical_ind_chart.index, y=['BBL_20_2.0', 'BBM_20_2.0', 'BBU_20_2.0', 'Close'], title='Bollinger Bands')
+            st.plotly_chart(bb_band_graph, use_container_width=True)
+            st.success(bband_msg)
 
+            #Split RSI & MACD to two separate column
+            rsi_col, macd_col = st.columns(2)
 
+            rsi_graph = px.line(technical_ind_chart, x=technical_ind_chart.index, y='RSI_14', title='RSI')
+            rsi_col.plotly_chart(rsi_graph, use_container_width=True)
+            rsi_col.success(rsi_msg)
 
-#Plotting Portfolio
+            macd_graph = px.line(technical_ind_chart, x=technical_ind_chart.index, y='MACDh_12_26_9', title='MACD Histogram')
+            macd_col.plotly_chart(macd_graph, use_container_width=True)
+            macd_col.success(macd_msg)
 
-        # st.write("Portfolio Optimisation")
+            # st.subheader('News Sentiment Analysis')
 
-        # N_PORTFOLIOS = 10 ** 5
-        # N_DAYS = 252
-        # RISKY_ASSETS = tickers
-        # RISKY_ASSETS.sort()
-        # START_DATE = start_date
-        # END_DATE = end_date
+            # news_obj = Sentiment_Class(portfolio_choice)
+            # news_dataframe = news_obj.downloadDf
+            # news_sentiment, vadar_compound_score = news_obj.sentiment_analysis_df()
 
-    
-        # portfolio_obj = Portfolio(
-        # RISKY_ASSETS, START_DATE, END_DATE, N_DAYS, N_PORTFOLIOS)
-        # portf_vol_ef, portf_rtns_ef, portf_results_df, final_weights = portfolio_obj.monte_carlo_sim()
+            # total_news = news_sentiment.shape[0]
+            # average_vadar = vadar_compound_score / total_news
 
-        # efficient_frontier = px.scatter(portf_results_df, title='Efficient Frontier', x='volatility', y = 'returns', color='sharpe_ratio' )
-                
-        # st.plotly_chart(efficient_frontier, use_container_width=True)
+            # score_met1, score_met2 = st.columns(2)
+            # score_met1.metric('Total Score:', vadar_compound_score)
+            # score_met2.metric('Average Score:', average_vadar)
+            
+            # if average_vadar > 0:
+            #     st.success("News are positive")
+            # elif average_vadar < 0:
+            #     st.success("News are negative")
+
+            # re_fig = go.Figure(data=[go.Table(
+            #         header=dict(values=list(news_dataframe.columns),
+            #                     fill_color='#0E1117', font=dict(size=18),
+            #                     align='left'),
+            #         cells=dict(values=[news_dataframe['Time'], news_dataframe['News Reporter'], news_dataframe['News Headline'], news_dataframe['URL']],
+            #                 fill_color='#0E1117', font=dict(size=16),
+            #                 align='left'
+            #                 ))
+            #     ])
+
+            # re_fig.update_layout(
+            #     margin=dict(l=0, r=0, t=0, b=0, autoexpand=True),
+            #     paper_bgcolor="#0E1117",
+            # )
+
+            # st.plotly_chart(re_fig, use_container_width=True)
+            
+            # st.dataframe(news_sentiment)
         
-        # # Maximum performance
-        
-        # pie_sharpe_col, sharpe_values_col = st.columns(2)
-        
-        # max_sharpe_sorted = portf_results_df.sort_values(by=['sharpe_ratio'],ascending=False)
-        # max_sharpe_portf = max_sharpe_sorted.head(1) 
-        # temp = final_weights[max_sharpe_portf.index]
-        
-        
-        # weight_final_df = pd.DataFrame(index=tickers)
-        # weight_final_df['weights'] = temp[0]
-        
-        
-        # max_breakdown = px.pie(weight_final_df, values=weight_final_df['weights'], names = weight_final_df.index, title="Maximum Breakdown")
-        # pie_sharpe_col.plotly_chart(max_breakdown, use_container_width=True)
-        
-        # sharpe_values_col.write(max_sharpe_portf)
-
-        
-### WY Codes
-        
-        # Portfolio Creation
-        #N_PORTFOLIOS = 10 ** 5
-        #N_DAYS = 252
-        #RISKY_ASSETS = symbols
-        #RISKY_ASSETS.sort()
-        #START_DATE = start_date
-        #END_DATE = end_date
-
-        #print(RISKY_ASSETS)
-        
-
-        #portfolio_obj = Portfolio(
-        #    RISKY_ASSETS, START_DATE, END_DATE, N_DAYS, N_PORTFOLIOS)
-        #portf_vol_ef, portf_rtns_ef, portf_results_df, final_weights = portfolio_obj.monte_carlo_sim()
-
-        #Create Graph
-        # MARKS = ['o', 'X', 'd', '*', '.', '>', '<', '1', 'h', 'H', '+', 'v']
-
-        # cov_mat = portfolio_obj.get_cov_mat()
-        # avg_returns = portfolio_obj.get_avg_returns()
-
-        # fig, ax = plt.subplots(figsize=(10, 5))
-        # portf_results_df.plot(kind='scatter', x='volatility',
-        #                       y='returns', c='sharpe_ratio',
-        #                       cmap='RdYlGn', edgecolors='black',
-        #                       ax=ax)
-        # ax.set(xlabel='Volatility',
-        #        ylabel='Expected Returns',
-        #        title='Efficient Frontier')
-        # ax.plot(portf_vol_ef, portf_rtns_ef, 'b--')
-
-        # for asset_index in range(len(RISKY_ASSETS)):
-        #     ax.scatter(x=np.sqrt(cov_mat.iloc[asset_index, asset_index]),
-        #                y=avg_returns[asset_index],
-        #                marker=MARKS[asset_index],
-        #                s=150,
-        #                color='black',
-        #                label=RISKY_ASSETS[asset_index])
-
-        # ax.legend()
-
-        # efficient_frontier_img = BytesIO()
-        # fig.savefig(efficient_frontier_img, format="png")
-        # st.image(efficient_frontier_img)
-
-        # # st.pyplot(fig)
-
-        # # Print the Maximum Results
-        # max_sharpe_ind = np.argmax(portf_results_df.sharpe_ratio)
-        # max_sharpe_portf = portf_results_df.loc[max_sharpe_ind]
-
-        # print('sharpe:', max_sharpe_ind)
-
-        # st.subheader('Maximum Sharpe Ratio Performance')
-        # max_col1, max_col2, max_col3 = st.columns(3)
-        # max_col1.metric('Returns', str(round(max_sharpe_portf[0] * 100, 2)) + "%")
-        # max_col2.metric('Volatility', str(round(max_sharpe_portf[1] * 100, 2)) + "%")
-        # max_col3.metric('Sharpe Ratio', round(max_sharpe_portf[2], 2))
-
-        # #Show pie chart
-
-        # full_str_max = []
-        # for x, y in zip(RISKY_ASSETS, final_weights[max_sharpe_ind]):
-        #     full_str_max.append( (x + ": " + str(round(y*100, 2))) + "% " )
-
-        # labels = RISKY_ASSETS
-        # sizes = np.around(final_weights[np.argmax(portf_results_df.sharpe_ratio)]*100, decimals=2)
-
-        # max_pie_fig, max_pie_ax = plt.subplots()
-        # max_pie_ax.pie(sizes, labels=labels, autopct='%1.1f%%',
-        # shadow=True, startangle=90)
-        # max_pie_ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
-        
-        # #Display pie + table in text
-        # max_sharpe_pie_col1, max_sharpe_pie_col2 = st.columns(2)
-
-        # maximum_sharpe_ratio_img = BytesIO()
-        # max_pie_fig.savefig(maximum_sharpe_ratio_img, format="png")
-        # max_sharpe_pie_col1.image(maximum_sharpe_ratio_img)
-
-        # for text in full_str_max:
-        #     max_sharpe_pie_col2.write(text)
         
 
-        # #Print Minimum Volatility
-        # min_vol_ind = np.argmin(portf_results_df.volatility)
-        # min_vol_portf = portf_results_df.loc[min_vol_ind]
         
-        # st.subheader('Minimum Volatility Performance')
-        # min_col1, min_col2, min_col3 = st.columns(3)
-        # min_col1.metric('Returns', str(round(min_vol_portf[0] * 100, 2)) + "%")
-        # min_col2.metric('Volatility', str(round(min_vol_portf[1] * 100, 2)) + "%")
-        # min_col3.metric('Sharpe Ratio', round(min_vol_portf[2], 2))
-
-        # #Show pie chart
-
-        # full_str_min = []
-        # for x, y in zip(RISKY_ASSETS, final_weights[min_vol_ind]):
-        #     full_str_min.append( (x + ": " + str(round(y*100, 2))) + "% " )
-
-        # labels = RISKY_ASSETS
-        # sizes = np.around(final_weights[np.argmin(portf_results_df.volatility)]*100, decimals=2)
-
-        # min_pie_fig, min_pie_ax = plt.subplots()
-        # min_pie_ax.pie(sizes, labels=labels, autopct='%1.1f%%',
-        # shadow=True, startangle=90)
-        # min_pie_ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
-        
-        # #Display pie + table in text
-        # min_vol_pie_col1, max_vol_pie_col2 = st.columns(2)
-
-        # min_volatility_img = BytesIO()
-        # min_pie_fig.savefig(min_volatility_img, format="png")
-        # min_vol_pie_col1.image(min_volatility_img)
-
-        # for text in full_str_min:
-        #     max_vol_pie_col2.write(text)
-
-        # #Maximum Returns
-        # max_returns_ind = np.argmax(portf_results_df.returns)
-        # max_returns_portf = portf_results_df.loc[max_returns_ind]
-
-        # st.subheader('Maximum Returns Performance')
-        # max_ret_col1, max_ret_col2, max_ret_col3 = st.columns(3)
-        # max_ret_col1.metric('Returns', str(round(max_returns_portf[0] * 100, 2)) + "%")
-        # max_ret_col2.metric('Volatility', str(round(max_returns_portf[1] * 100, 2)) + "%")
-        # max_ret_col3.metric('Sharpe Ratio', round(max_returns_portf[2], 2))
-
-        # #Show pie chart
-        # #CONFIRM AGN if argmin/argmax
-        # full_str_max_ret = []
-        # for x, y in zip(RISKY_ASSETS, final_weights[max_returns_ind]):
-        #     full_str_max_ret.append( (x + ": " + str(round(y*100, 2))) + "% " )
-
-        # labels = RISKY_ASSETS
-        # sizes = np.around(final_weights[np.argmax(portf_results_df.returns)]*100, decimals=2)
-
-        # max_ret_pie_fig, max_ret_pie_ax = plt.subplots()
-        # max_ret_pie_ax.pie(sizes, labels=labels, autopct='%1.1f%%',
-        # shadow=True, startangle=90)
-        # max_ret_pie_ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
-        
-        # #Display pie + table in text
-        # max_ret_pie_col1, max_ret_pie_col2 = st.columns(2)
-
-        # max_ret_img = BytesIO()
-        # max_ret_pie_fig.savefig(max_ret_img, format="png")
-        # max_ret_pie_col1.image(max_ret_img)
-
-        # for text in full_str_max_ret:
-        #     max_ret_pie_col2.write(text)
-
-
-
-
-
-
-
-
-

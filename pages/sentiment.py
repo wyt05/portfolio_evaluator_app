@@ -163,6 +163,7 @@ class Sentiment_Class:
 
     def sentiment_analysis_df(self):
         stock = self.downloadDf
+        print(stock)
         stock["Time_pdformat"]= pd.to_datetime(stock['Time'],infer_datetime_format=True)
 
         # other_column is generally time field in df

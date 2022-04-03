@@ -129,8 +129,6 @@ def app():
         rsi_msg, rsi_points = portfolio_item.get_technical_results_rsi(trend_lookback)
         macd_msg, macd_points = portfolio_item.get_technical_results_macd(trend_lookback)
 
-        pf.create_simple_tear_sheet(returns=return_series_chart['return_series'])
-
         #Display total points
         total_points = bband_points + rsi_points + macd_points
         print(total_points)

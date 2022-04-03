@@ -89,14 +89,13 @@ class Portfolio:
     
     def get_alt_sortino_ratio(self):
         technical_ind = self.portfolio_rst
-        sortino = ta.sortino_ratio(technical_ind['Adj Close'])
+        sortino = ta.sortino_ratio(technical_ind['Adj Close'], 0.01)
 
         return sortino
     
     def get_alt_sharpe_ratio(self):
         technical_ind = self.portfolio_rst
-        sortino = ta.sharpe_ratio(technical_ind['Adj Close'])
-
+        sortino = ta.sharpe_ratio(technical_ind['Adj Close'], 0.01)
         return sortino
     
     def get_log_returns(self):

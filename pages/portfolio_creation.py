@@ -116,24 +116,20 @@ def app():
             # Plotting return series
             closes = panel_data[['Close', 'Adj Close']]
 
-            return_series_adj = (
-                closes['Adj Close'].pct_change() + 1).cumprod() - 1
-
+            return_series_adj = (closes['Adj Close'].pct_change() + 1).cumprod() - 1
 
             weighted_return_series = port_weight * (return_series_adj)
 
             return_series_portfolio = weighted_return_series.sum(axis=1)
 
+
             st.write("Portfolio Performance")
             no_of_days = end_date - start_date
             portf_rtns = return_series_portfolio.tail(1).item()
-            portf_sharpe_ratio = (portf_rtns - 0.02) / \
-                return_series_portfolio.std()
+            portf_sharpe_ratio = (portf_rtns - 0.02) / return_series_portfolio.std()
 
-            portf_vol = np.sqrt(np.log(
-                return_series_portfolio / return_series_portfolio.shift(1)).var()) * np.sqrt(252)
-            log_returns = np.log(return_series_portfolio /
-                                 return_series_portfolio.shift(1))
+            portf_vol = np.sqrt(np.log(return_series_portfolio/return_series_portfolio.shift(1)).var())*np.sqrt(252)
+            log_returns = np.log(return_series_portfolio / return_series_portfolio.shift(1))
             portf_kurt = log_returns.kurtosis()
             portf_skew = log_returns.skew()
 

@@ -57,7 +57,7 @@ def app():
         sharpe_ratio_alt = portfolio_item.get_alt_sharpe_ratio()
         #sortino_ratio = portfolio_item.get_sortino_ratio(0.01, no_of_days.days)
         sortino_ratio = portfolio_item.get_alt_sortino_ratio()
-        kurtosis = portfolio_item.get_kurtosis()
+        #kurtosis = portfolio_item.get_kurtosis()
         get_log_return = portfolio_item.get_log_returns()
         print(return_series_chart['return_series'].dropna())
         value_at_risk = var_historic(return_series_chart['return_series'].dropna())

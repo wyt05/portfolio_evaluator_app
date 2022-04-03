@@ -115,12 +115,22 @@ def app():
 
             # Plotting return series
             closes = panel_data[['Close', 'Adj Close']]
-
             return_series_adj = (closes['Adj Close'].pct_change() + 1).cumprod() - 1
 
             weighted_return_series = port_weight * (return_series_adj)
 
             return_series_portfolio = weighted_return_series.sum(axis=1)
+
+            #Get the price series
+            close_price_only = panel_data[['Close']]
+            adj_price_only = panel_data[['Adj Close']]
+
+            weighted_closing_series = port_weight * close_price_only
+            weighted_adj_closing_series = port_weight * adj_price_only
+
+            weighted_close_portfolio = pd.DataFrame()
+            weighted_close_portfolio['Close'] = weighted_closing_series.sum(axis=1)
+            weighted_close_portfolio['Adj Close'] = weighted_adj_closing_series.sum(axis=1)
 
 
             st.write("Portfolio Performance")
@@ -128,8 +138,8 @@ def app():
             portf_rtns = return_series_portfolio.tail(1).item()
             portf_sharpe_ratio = (portf_rtns - 0.02) / return_series_portfolio.std()
 
-            portf_vol = np.sqrt(np.log(return_series_portfolio/return_series_portfolio.shift(1)).var())*np.sqrt(252)
-            log_returns = np.log(return_series_portfolio / return_series_portfolio.shift(1))
+            portf_vol = np.sqrt(np.log(weighted_close_portfolio['Close']/weighted_close_portfolio['Close'].shift(1)).var())*np.sqrt(252)
+            log_returns = np.log(weighted_close_portfolio['Close'] / weighted_close_portfolio['Close'].shift(1))
             portf_kurt = log_returns.kurtosis()
             portf_skew = log_returns.skew()
 
@@ -148,6 +158,8 @@ def app():
             return_plot = px.line(title='Portfolio Return')
             return_plot.add_scatter(
                 x=return_series_portfolio.index, y=return_series_portfolio, name="Portfolio_Returns")
+            
+            return_plot.layout.yaxis.tickformat=',.0%'
 
             for item in symbols:
                 return_plot.add_scatter(
@@ -212,6 +224,8 @@ def app():
             return_plot_max = px.line(title='Portfolio Return')
             return_plot_max.add_scatter(
                 x=return_series_max.index, y=return_series_max, name="Portfolio_Returns")
+            
+            return_plot_max.layout.yaxis.tickformat=',.0%'
 
             for item in symbols:
                 return_plot_max.add_scatter(
@@ -255,6 +269,8 @@ def app():
             return_plot_min = px.line(title='Portfolio Return')
             return_plot_min.add_scatter(
                 x=return_series_min.index, y=return_series_min, name="Portfolio_Returns")
+            
+            return_plot_min.layout.yaxis.tickformat=',.0%'
 
             for item in symbols:
                 return_plot_min.add_scatter(
@@ -300,6 +316,8 @@ def app():
             return_plot_max_returns = px.line(title='Portfolio Return')
             return_plot_max_returns.add_scatter(
                 x=return_series_max_returns.index, y=return_series_max_returns, name="Portfolio_Returns")
+            
+            return_plot_max_returns.layout.yaxis.tickformat=',.0%'
 
             for item in symbols:
                 return_plot_max_returns.add_scatter(

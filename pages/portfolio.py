@@ -16,27 +16,27 @@ from torch import dtype
 import yfinance as yf
 import pandas_ta as ta
 
-def trend_rev(column_name, df, trend_detect='down'):
-    determine_trend = []
-    max_val = 0
-    #Detects REVERSAL 
-    for index, row in df.sort_index(ascending=False).iterrows():
-        #check if there is a reverse trend (If it's current downtrend)
-        if trend_detect == 'down':
-            if row[column_name] < max_val:
-                determine_trend.append(row[column_name])
-                max_val = row[column_name]
-            else:
-                break
-        #check if there is a reverse trend (If it's current uptrend)
-        else:
-            if row[column_name] > max_val:
-                determine_trend.append(row[column_name])
-                max_val = row[column_name]
-            else:
-                break
-    determine_trend.reverse()
-    return determine_trend
+# def trend_rev(column_name, df, trend_detect='down'):
+#     determine_trend = []
+#     max_val = 0
+#     #Detects REVERSAL 
+#     for index, row in df.sort_index(ascending=False).iterrows():
+#         #check if there is a reverse trend (If it's current downtrend)
+#         if trend_detect == 'down':
+#             if row[column_name] < max_val:
+#                 determine_trend.append(row[column_name])
+#                 max_val = row[column_name]
+#             else:
+#                 break
+#         #check if there is a reverse trend (If it's current uptrend)
+#         else:
+#             if row[column_name] > max_val:
+#                 determine_trend.append(row[column_name])
+#                 max_val = row[column_name]
+#             else:
+#                 break
+#     determine_trend.reverse()
+#     return determine_trend
 
 def trend_detection(column_name, df, lookback):
     rev_df = df.sort_index(ascending=False)
@@ -50,14 +50,18 @@ def trend_detection(column_name, df, lookback):
 
 
 class Portfolio:
-    def __init__(self, symbols, start_date, end_date, n_days=0, n_portfolio=0):
+    def __init__(self, symbols, start_date, end_date, n_days=0, n_portfolio=0, portfolio_rst=pd.DataFrame()):
         self.symbols = symbols
         self.start_date = start_date
         self.end_date = end_date
         self.n_days = n_days
         self.n_portfolio = n_portfolio
-        self.portfolio_rst = yf.download(
-            symbols, start=start_date, end=end_date)
+
+        if len(portfolio_rst) == 0:
+            self.portfolio_rst = yf.download(
+                symbols, start=start_date, end=end_date)
+        else:
+            self.portfolio_rst = portfolio_rst
 
     def get_full_info(self):
 
@@ -198,7 +202,6 @@ class Portfolio:
             message = 'The stock is oversold, below 30. INDICATE BUY'
             points = 1
         else:
-            
             #If RSI closer to lower
             if rsi_check > 55 and rsi_check < 70:
 
@@ -289,6 +292,7 @@ class Portfolio:
 
         return sortino_ratio.values[0]
 
+
     def get_close_dataframe(self):
 
         return self.portfolio_rst['Close']
@@ -332,6 +336,7 @@ class Portfolio:
                                             np.dot(cov_mat, weights[i]))))
         portf_vol = np.array(portf_vol)
         portf_sharpe_ratio = portf_rtns / portf_vol
+
 
         portf_weights = []
         for portfolio in weights:

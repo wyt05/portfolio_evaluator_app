@@ -70,7 +70,7 @@ def app():
         #                         text='Press enter to add more',
         #                         maxtags=12)
         port_weight = st.text_input(
-            'Insert weight of stocks, in this format: 0.1,0.1,0.1')
+            'Insert weight of stocks, in this format: 0.1,0.1,0.1. Needs to add up to 1')
         port_weight_equalize = st.checkbox('Equalize weight?')
         date_cols = st.columns((1, 1))
         start_date = date_cols[0].date_input('Start Date')
@@ -79,10 +79,10 @@ def app():
 
     if submitted:
 
-        remove_whitespace = "".join(port_weight.split())
-        port_weight = remove_whitespace.split(',')
-        port_weight = convert_float(port_weight)
-        print(port_weight)
+        if port_weight_equalize == False:
+            remove_whitespace = "".join(port_weight.split())
+            port_weight = remove_whitespace.split(',')
+            port_weight = convert_float(port_weight)
 
         if (len(symbols) >= len(port_weight) and weight_counter(port_weight) == 1.0) or port_weight_equalize == True:
             # Portfolio Creation
@@ -92,6 +92,18 @@ def app():
             RISKY_ASSETS.sort()
             START_DATE = start_date
             END_DATE = end_date
+
+            # Block of IF code to check if user want to equalize weight
+
+            if port_weight_equalize == True:
+                print('working')
+                stock_weight = []
+                number_of_stock = len(symbols)
+                equalized = 1 / number_of_stock
+                for i in range(number_of_stock):
+                    stock_weight.append(equalized)
+
+                port_weight = stock_weight
 
             print(RISKY_ASSETS)
 
@@ -106,17 +118,6 @@ def app():
             return_series_adj = (
                 closes['Adj Close'].pct_change() + 1).cumprod() - 1
 
-            # Block of IF code to check if user want to equalize weight
-
-            if port_weight_equalize == True:
-                print('working')
-                stock_weight = []
-                number_of_stock = len(symbols)
-                equalized = 1 / number_of_stock
-                for i in range(number_of_stock):
-                    stock_weight.append(equalized)
-
-                port_weight = stock_weight
 
             weighted_return_series = port_weight * (return_series_adj)
 
@@ -134,6 +135,8 @@ def app():
                                  return_series_portfolio.shift(1))
             portf_kurt = log_returns.kurtosis()
             portf_skew = log_returns.skew()
+
+            
             max_col1, max_col2, max_col3, max_col4, max_col5 = st.columns(5)
 
             # st.write(portf_vol)

@@ -20,17 +20,13 @@ from pages.sentiment import Sentiment_Class
 from io import BytesIO
 import pyfolio as pf
 
-def get_sentimental_label(val):
-  if (val <= 1.0 and val >= 0.6):
-    return 'Very Positive'
-  elif (val < 0.6 and val >= 0.10):
-    return 'Positve'
-  elif (val < 0.10 and val > - 0.10):
-    return 'Neutral'
-  elif ( val <= -0.10 and val > - 0.55):
-    return 'Negative'
-  else:
-    return 'Very Negative'
+def var_historic(r, level=1):
+    if isinstance(r, pd.DataFrame):
+        return r.aggregate(var_historic, level=level)
+    elif isinstance(r, pd.Series):
+        return -np.percentile(r, level)
+    else:
+        raise TypeError("Expected r to be a Series or DataFrame")
 
 
 def app():
@@ -63,26 +59,26 @@ def app():
         sortino_ratio = portfolio_item.get_alt_sortino_ratio()
         kurtosis = portfolio_item.get_kurtosis()
         get_log_return = portfolio_item.get_log_returns()
+        print(return_series_chart['return_series'].dropna())
+        value_at_risk = var_historic(return_series_chart['return_series'].dropna())
 
         #Overview
         st.subheader('Overview')
-
 
         #Annualized Return - show as metrics
         
         total_return = return_series_chart['return_series'].tail(1).values
         annualized_return = ((((1+total_return)**(365/no_of_days.days)) - 1)*100).round(2)
-        value_at_risk = str(abs(round(return_series_chart['return_series'].min()*100, 2))) + "%"
         
         #Metrics
-        metrics1, metrics2, metrics3, metrics4 = st.columns(4)
+        metrics1, metrics2, metrics3, metrics4, metrics5 = st.columns(5)
         metrics1.metric('Annualized Return', str(annualized_return[0]) + "%")
         #metric2.metric('Sharpe Ratio', round(sharpe_ratio, 2))
         metrics2.metric('Sharpe Ratio', round(sharpe_ratio_alt, 2))
         metrics3.metric('Sortino Ratio', sortino_ratio.round(2))
         #metrics4.metric('30 Day Kurtosis', round(kurtosis.tail(1).values[0], 2))
         metrics4.metric('Full Range Kurtosis', round(get_log_return.kurtosis(), 2))
-        #metrics6.metric('Maximum Value at Risk:', value_at_risk)
+        metrics5.metric('Maximum Value at Risk:', str(round(value_at_risk * 100, 2)) + "%")
         
 
         #Stock result
@@ -115,6 +111,8 @@ def app():
               xaxis_title="Time",
               yaxis_title="Profit",
           )
+
+          st.subheader("Company Financials")
           
           st.plotly_chart(return_plot, use_container_width=True)
         
@@ -156,29 +154,33 @@ def app():
 
         st.subheader('News Sentiment Analysis')
 
-        news_obj = Sentiment_Class(portfolio_choice)
-        news_dataframe = news_obj.downloadDf
-        news_sentiment, vadar_compound_score = news_obj.sentiment_analysis_df()
+        with st.spinner('Loading News Sentiment...'):
+            news_obj = Sentiment_Class(portfolio_choice)
+            news_sentiment = news_obj.sentiment_analysis_df()
+
+        #news_sentiment = news_sentiment.set_index('Time Posted')
+        pd.set_option('display.max_colwidth', None)
 
         total_news = news_sentiment.shape[0]
-        average_vadar = vadar_compound_score / total_news
+        average_score =  news_sentiment['score'].sum() / total_news
 
         score_met1, score_met2 = st.columns(2)
-        score_met1.metric('Total Score:', vadar_compound_score)
-        score_met2.metric('Average Score:', average_vadar)
+        score_met1.metric('Total Score:', int(news_sentiment['score'].sum()))
+        score_met2.metric('Average Score:', average_score)
         
-        if average_vadar > 0:
+        if average_score > 0:
           st.success("News are positive")
-        elif average_vadar < 0:
+        elif average_score < 0:
           st.success("News are negative")
 
         re_fig = go.Figure(data=[go.Table(
-                header=dict(values=list(news_dataframe.columns),
+                header=dict(values=list(news_sentiment.columns),
                             fill_color='#0E1117', font=dict(size=18),
                             align='left'),
-                cells=dict(values=[news_dataframe['Time'], news_dataframe['News Reporter'], news_dataframe['News Headline'], news_dataframe['URL']],
+                cells=dict(values=[news_sentiment['Time posted'], news_sentiment['News Headline'], news_sentiment['stock'], news_sentiment['score']],
                            fill_color='#0E1117', font=dict(size=16),
-                           align='left'
+                           align='left',
+                           height=30
                            ))
             ])
 
@@ -189,10 +191,10 @@ def app():
 
         st.plotly_chart(re_fig, use_container_width=True)
         
-        st.dataframe(news_sentiment)
+        # st.dataframe(news_sentiment)
 
-        st.subheader("LSTM Prediction")
-        st.write("The prediction model will attempt to predict changes in price tomorrow.")
+        # st.subheader("LSTM Prediction")
+        # st.write("The prediction model will attempt to predict changes in price tomorrow.")
 
 
 

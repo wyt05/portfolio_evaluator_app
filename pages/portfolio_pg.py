@@ -98,8 +98,9 @@ def app():
         current_choice = portfolio_choice[0]
 
         # test weight
-
-        portfolio_tickers_timmy = [['SPY', 0.5, ], ['SBUX', 0.1], ['TSLA', 0.4]]
+        #['ALGN', 'BLK', 'CERN', 'ENIA', 'FORD', 'INFO', 'INVH', 'NFLX', 'RSG', 'TSLA']
+        portfolio_tickers_timmy = [['ALGN', 0.1], ['BLK', 0.1], ['CERN', 0.05], ['ENIA', 0.05], ['FORD', 0.05], ['IHS', 0.05], ['INVH', 0.06], ['NFLX', 0.09], ['RSG', 0.1], ['TSLA', 0.35]]
+        #portfolio_tickers_timmy = [['SPY', 0.5, ], ['SBUX', 0.1], ['TSLA', 0.4]]
         portfolio_tickers_jimmy = [['SPY', 0.5], ['EURUSD=X', 0.5]]
 
         # initialize portfolio data
@@ -286,7 +287,7 @@ def app():
 
         score_met1, score_met2 = st.columns(2)
         score_met1.metric('Total Score:', int(complete_news_sentiment['score'].sum()))
-        score_met2.metric('Average Score:', average_score)
+        score_met2.metric('Average Score:', round(average_score, 2))
 
         if average_score > 0:
             st.success("News are positive")

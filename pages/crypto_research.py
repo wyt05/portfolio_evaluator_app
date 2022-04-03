@@ -120,9 +120,9 @@ def app():
         
           max_col1, max_col2, max_col3= st.columns(3)
         
-          max_col1.metric('Net Income Ratio', str(jsonResponse[0]["netIncomeRatio"]))
+          max_col1.metric('Net Income Ratio', str(round(jsonResponse[0]["netIncomeRatio"], 2)))
           max_col2.metric('Earning Per Share', str(jsonResponse[0]["eps"]))
-          max_col3.metric('Profit', str(jsonResponse[0]["grossProfit"]))
+          max_col3.metric('Profit', "$" + str("{:,}".format(jsonResponse[0]["grossProfit"])))
         
         #Technical Indicator results
         st.subheader('Technical Indicators')
@@ -166,7 +166,7 @@ def app():
 
         score_met1, score_met2 = st.columns(2)
         score_met1.metric('Total Score:', int(news_sentiment['score'].sum()))
-        score_met2.metric('Average Score:', average_score)
+        score_met2.metric('Average Score:', round(average_score, 2))
         
         if average_score > 0:
           st.success("News are positive")

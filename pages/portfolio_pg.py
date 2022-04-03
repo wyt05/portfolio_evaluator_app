@@ -63,6 +63,14 @@ def get_stock_news_list(tickers):
 
     return news_dataframe
 
+def var_historic(r, level=1):
+    if isinstance(r, pd.DataFrame):
+        return r.aggregate(var_historic, level=level)
+    elif isinstance(r, pd.Series):
+        return -np.percentile(r, level)
+    else:
+        raise TypeError("Expected r to be a Series or DataFrame")
+
 
 def app():
     st.title("Portfolio Evaluator Page")
@@ -134,6 +142,8 @@ def app():
 
         return_series_portfolio = weighted_return_series.sum(axis=1)
 
+        print(return_series_portfolio)
+
         # Getting the actual closing price
         close_price_only = panel_data[['Close']]
         adj_price_only = panel_data[['Adj Close']]
@@ -146,7 +156,13 @@ def app():
         weighted_close_portfolio['Adj Close'] = weighted_adj_closing_series.sum(
             axis=1)
 
-        print(weighted_close_portfolio)
+        #Place the Portfolio item into the class (For any measurements using price)
+        tech_ind_obj = Portfolio(
+            tickers, start_date, end_date, portfolio_rst=weighted_close_portfolio)
+        technical_ind_chart = tech_ind_obj.get_technical_indicators()
+
+        sortino_ratio = tech_ind_obj.get_alt_sortino_ratio()
+        value_at_risk = var_historic(return_series_portfolio.dropna())
 
         # Plotting the return series
 
@@ -193,16 +209,19 @@ def app():
             weighted_close_portfolio['Close'] / weighted_close_portfolio['Close'].shift(1))
         portf_kurt = log_returns.kurtosis()
         portf_skew = log_returns.skew()
-        max_col1, max_col2, max_col3, max_col4, max_col5 = st.columns(5)
+        
+        max_col1, max_col2, max_col3, max_col4, max_col5, max_col6, max_col7 = st.columns(7)
 
         # st.write(portf_vol)
         # st.write(portf_sharpe_ratio)
 
         max_col1.metric('Annualized Returns', str(portf_rtns[0]) + "%")
-        max_col2.metric('Volatility', str(round(portf_vol, 2) * 100) + "%")
+        max_col2.metric('Annualized Volatility', str(round(portf_vol, 2) * 100) + "%")
         max_col3.metric('Sharpe Ratio', round(portf_sharpe_ratio, 2))
-        max_col4.metric('Kurtosis', round(portf_kurt, 2))
-        max_col5.metric('Skewness', round(portf_skew, 2))
+        max_col4.metric('Sortino Ratio', round(sortino_ratio, 2))
+        max_col5.metric('Kurtosis', round(portf_kurt, 2))
+        max_col6.metric('Skewness', round(portf_skew, 2))
+        max_col7.metric('Value at Risk', str(round(value_at_risk * 100, 2)) + "%")
 
         # plotting distribution
         return_series_portfolio
@@ -219,9 +238,6 @@ def app():
         st.plotly_chart(portfolio_breakdown, use_container_width=True)
 
         # Plotting Portfolio Direction
-        tech_ind_obj = Portfolio(
-            tickers, start_date, end_date, portfolio_rst=weighted_close_portfolio)
-        technical_ind_chart = tech_ind_obj.get_technical_indicators()
 
         # Technical Indicator results
         st.subheader('Technical Indicators for the Portfolio')
@@ -264,8 +280,6 @@ def app():
                 complete_news_sentiment = pd.concat([complete_news_sentiment, news_sentiment])
 
             pd.set_option('display.max_colwidth', None)
-
-        st.write(complete_news_sentiment)
 
         total_news = complete_news_sentiment.shape[0]
         average_score = complete_news_sentiment['score'].sum() / total_news

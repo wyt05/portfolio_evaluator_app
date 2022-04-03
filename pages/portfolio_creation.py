@@ -56,7 +56,14 @@ def convert_float(weight_list):
     for i in weight_list:
         ret_list.append(float(i))
     return ret_list
-
+    
+def var_historic(r, level=1):
+    if isinstance(r, pd.DataFrame):
+        return r.aggregate(var_historic, level=level)
+    elif isinstance(r, pd.Series):
+        return -np.percentile(r, level)
+    else:
+        raise TypeError("Expected r to be a Series or DataFrame")
 
 def app():
     st.title("Portfolio Creation Page")
@@ -132,6 +139,12 @@ def app():
             weighted_close_portfolio['Close'] = weighted_closing_series.sum(axis=1)
             weighted_close_portfolio['Adj Close'] = weighted_adj_closing_series.sum(axis=1)
 
+            tech_ind_obj = Portfolio(
+            RISKY_ASSETS, start_date, end_date, portfolio_rst=weighted_close_portfolio)
+
+            sortino_ratio = tech_ind_obj.get_alt_sortino_ratio()
+            value_at_risk = var_historic(return_series_portfolio.dropna())
+
 
             st.write("Portfolio Performance")
             no_of_days = end_date - start_date
@@ -148,16 +161,24 @@ def app():
             portf_skew = log_returns.skew()
 
             
-            max_col1, max_col2, max_col3, max_col4, max_col5 = st.columns(5)
+            max_col1, max_col2, max_col3, max_col4, max_col5, max_col6, max_col7 = st.columns(7)
 
             # st.write(portf_vol)
             # st.write(portf_sharpe_ratio)
             #
+            # max_col1.metric('Annualized Returns', str(portf_rtns[0]) + "%")
+            # max_col2.metric('Annualized Volatility', str(round(portf_vol, 2) * 100) + "%")
+            # max_col3.metric('Sharpe Ratio', round(portf_sharpe_ratio, 2))
+            # max_col4.metric('Kurtosis', round(portf_kurt, 2))
+            # max_col5.metric('Skewness', round(portf_skew, 2))
+
             max_col1.metric('Annualized Returns', str(portf_rtns[0]) + "%")
-            max_col2.metric('Volatility', str(round(portf_vol, 2) * 100) + "%")
+            max_col2.metric('Annualized Volatility', str(round(portf_vol, 2) * 100) + "%")
             max_col3.metric('Sharpe Ratio', round(portf_sharpe_ratio, 2))
-            max_col4.metric('Kurtosis', round(portf_kurt, 2))
-            max_col5.metric('Skewness', round(portf_skew, 2))
+            max_col4.metric('Sortino Ratio', round(sortino_ratio, 2))
+            max_col5.metric('Kurtosis', round(portf_kurt, 2))
+            max_col6.metric('Skewness', round(portf_skew, 2))
+            max_col7.metric('Value at Risk', str(round(value_at_risk * 100, 2)) + "%")
 
             return_plot = px.line(title='Portfolio Return')
             return_plot.add_scatter(

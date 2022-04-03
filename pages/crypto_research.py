@@ -59,6 +59,7 @@ def app():
         sortino_ratio = portfolio_item.get_alt_sortino_ratio()
         #kurtosis = portfolio_item.get_kurtosis()
         get_log_return = portfolio_item.get_log_returns()
+        volatility = round(np.sqrt(get_log_return.var()) * np.sqrt(252)* 100,2)
         print(return_series_chart['return_series'].dropna())
         value_at_risk = var_historic(return_series_chart['return_series'].dropna())
 
@@ -71,15 +72,16 @@ def app():
         annualized_return = ((((1+total_return)**(365/no_of_days.days)) - 1)*100).round(2)
         
         #Metrics
-        metrics1, metrics2, metrics3, metrics4, metrics5 = st.columns(5)
+        metrics1, metrics2, metrics3, metrics4, metrics5, metrics6, metrics7 = st.columns(7)
         metrics1.metric('Annualized Return', str(annualized_return[0]) + "%")
+        metrics2.metric('Annualized Volatility', str(volatility) + "%")
         #metric2.metric('Sharpe Ratio', round(sharpe_ratio, 2))
-        metrics2.metric('Sharpe Ratio', round(sharpe_ratio_alt, 2))
-        metrics3.metric('Sortino Ratio', sortino_ratio.round(2))
+        metrics3.metric('Sharpe Ratio', round(sharpe_ratio_alt, 2))
+        metrics4.metric('Sortino Ratio', sortino_ratio.round(2))
         #metrics4.metric('30 Day Kurtosis', round(kurtosis.tail(1).values[0], 2))
-        metrics4.metric('Full Range Kurtosis', round(get_log_return.kurtosis(), 2))
-        metrics5.metric('Maximum Value at Risk:', str(round(value_at_risk * 100, 2)) + "%")
-        
+        metrics5.metric('Kurtosis', round(get_log_return.kurtosis(), 2))
+        metrics6.metric('Skewness', round(get_log_return.skew(), 2))
+        metrics7.metric('Maximum Value at Risk:', str(round(value_at_risk * 100, 2)) + "%")
 
         #Stock result
         main_return_series = px.line(
@@ -103,7 +105,7 @@ def app():
           
           income_df = pd.DataFrame(index=year_list)
           income_df["profit"] = profit_list
-          income_df.sort_index(ascending = True)
+          income_df = income_df.sort_index(ascending = True)
           return_plot = px.line(title='Portfolio Return', x=income_df.index, y=income_df["profit"])
           
           return_plot.update_layout(

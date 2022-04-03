@@ -142,8 +142,6 @@ def app():
 
         return_series_portfolio = weighted_return_series.sum(axis=1)
 
-        print(return_series_portfolio)
-
         # Getting the actual closing price
         close_price_only = panel_data[['Close']]
         adj_price_only = panel_data[['Adj Close']]
@@ -155,6 +153,8 @@ def app():
         weighted_close_portfolio['Close'] = weighted_closing_series.sum(axis=1)
         weighted_close_portfolio['Adj Close'] = weighted_adj_closing_series.sum(
             axis=1)
+
+        print(weighted_close_portfolio)
 
         #Place the Portfolio item into the class (For any measurements using price)
         tech_ind_obj = Portfolio(

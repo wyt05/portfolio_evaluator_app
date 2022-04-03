@@ -16,6 +16,7 @@ from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from yarg import newest_packages
 
 
 # nltk.download('vader_lexicon')
@@ -132,34 +133,43 @@ class Sentiment_Class:
             print(e)
 
     def finviz_view_pandas_dataframe(self):
-        url = 'https://finviz.com/quote.ashx?t={}'.format(self.ticker)
+        #url = 'https://finviz.com/quote.ashx?t={}'.format(self.ticker)
+        print(self.ticker)
+        url = 'https://finviz.com/quote.ashx?t=' + self.ticker
         # sending request for getting the html code of the Url
-        try:
+        #try:
 
-            request = Request(url=url, headers={'user-agent': 'my-app'})
-            response = urlopen(request)
+        request = Request(url=url, headers={'user-agent': 'my-app'})
+        response = urlopen(request)
 
             # parsing the HTML with BeautifulSoup
-            soup = BeautifulSoup(response, features='lxml')
+        soup = BeautifulSoup(response, features='lxml')
 
-            news_reporter_title = [row.text for row in soup.find_all(
+        news_reporter_title = [row.text for row in soup.find_all(
                 class_='news-link-right') if row is not None]
-            news_reported = [row.text for row in soup.find_all(
+        news_reported = [row.text for row in soup.find_all(
                 class_='news-link-left') if row is not None]
-            news_url = [row.find('a', href=True)["href"] for row in soup.find_all(
+        news_url = [row.find('a', href=True)["href"] for row in soup.find_all(
                 class_='news-link-left') if row is not None]
-            date_data = [row.text for row in soup.find_all(
+        date_data = [row.text for row in soup.find_all(
                 'td', attrs={"width": "130", 'align': 'right'}) if row is not None]
-            time = self.correct_time_formatting(date_data)
+        time = self.correct_time_formatting(date_data)
 
-            data = {"Time": time, 'News Reporter': news_reporter_title,
+        min_top_val = min(len(time), len(news_reporter_title), len(news_reported),len(news_url))
+        time = time[:min_top_val]
+        news_reporter_title = news_reporter_title[:min_top_val]
+        news_reported = news_reported[:min_top_val]
+        news_url = news_url[:min_top_val]
+
+        data = {"Time": time, 'News Reporter': news_reporter_title,
                     "News Headline": news_reported, "URL": news_url}
-            finviz_news_df = pd.DataFrame.from_dict(data)
 
-            return finviz_news_df
+        finviz_news_df = pd.DataFrame.from_dict(data)
+            
+        return finviz_news_df
 
-        except Exception as e:
-            print(e)
+        #except Exception as e:
+            #print(e)
 
     def sentiment_analysis_df(self):
         stock = self.downloadDf

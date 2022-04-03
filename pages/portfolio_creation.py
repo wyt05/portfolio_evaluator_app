@@ -1,5 +1,6 @@
 from lib2to3.pygram import Symbols
 from operator import index
+from tracemalloc import start
 from turtle import onclick
 from mechanize import Item
 from soupsieve import select

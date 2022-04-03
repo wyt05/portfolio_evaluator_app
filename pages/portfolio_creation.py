@@ -204,6 +204,9 @@ def app():
 
             weight_df["weights"] = port_weight
 
+            st.session_state.key = "Current_Weight"
+            st.session_state["Current_Weight"] = weight_df
+            
             portfolio_breakdown = px.pie(
                 weight_df, values=weight_df['weights'], names=weight_df.index, title="Portfolio Breakdown")
             st.plotly_chart(portfolio_breakdown, use_container_width=True)
@@ -394,6 +397,8 @@ def app():
 
                 else:
                     st.session_state.key = port_name[0]
-                    st.session_state[port_name[0]] = weight_df
-
+                    st.session_state[port_name[0]
+                                     ] = st.session_state["Current_Weight"] 
+            
+            
             st.success("It has been stored!")

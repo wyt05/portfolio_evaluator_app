@@ -223,15 +223,10 @@ def app():
             max_sharpe_ind = np.argmax(portf_results_df.sharpe_ratio)
             max_sharpe_portf = portf_results_df.loc[max_sharpe_ind]
 
-            print('sharpe:', max_sharpe_portf)
+            volatility_max = max_sharpe_portf[1]
+            sharpe_ratio_max = max_sharpe_portf[2]
 
-            st.subheader('Maximum Sharpe Ratio Performance')
-            max_col1, max_col2, max_col3 = st.columns(3)
-            max_col1.metric('Returns', str(
-                round(max_sharpe_portf[0] * 100, 2)) + "%")
-            max_col2.metric('Volatility', str(
-                round(max_sharpe_portf[1] * 100, 2)) + "%")
-            max_col3.metric('Sharpe Ratio', round(max_sharpe_portf[2], 2))
+            ################################# Calculate the return series for portfolio #################################
 
             max_sharpe_sorted = portf_results_df.sort_values(
                 by=['sharpe_ratio'], ascending=False)
@@ -244,13 +239,24 @@ def app():
 
             return_series_adj = return_series_adj.drop(columns='Portfolio')
 
-            print(return_series_adj)
-
-            # print graph
             weighted_return_series_max = max_sharpe_weight_final_df['weights'] * (
                 return_series_adj)
 
             return_series_max = weighted_return_series_max.sum(axis=1)
+
+            total_return_max = return_series_max.tail(1).values
+            annualized_max_portfolio_rtns = ((((1+total_return_max)**(365/no_of_days.days)) - 1)*100).round(2)
+
+            ######################################### END ######################################## 
+
+            st.subheader('Maximum Sharpe Ratio Performance')
+            max_col1, max_col2, max_col3 = st.columns(3)
+            max_col1.metric('Returns:', str(annualized_max_portfolio_rtns[0]) + "%")
+            # max_col1.metric('Returns', str(
+            #     round(max_sharpe_portf[0] * 100, 2)) + "%")
+            max_col2.metric('Volatility', str(
+                round(volatility_max * 100, 2)) + "%")
+            max_col3.metric('Sharpe Ratio', round(sharpe_ratio_max, 2))
 
             return_plot_max = px.line(title='Portfolio Return')
             return_plot_max.add_scatter(
@@ -275,13 +281,10 @@ def app():
             min_vol_ind = np.argmin(portf_results_df.volatility)
             min_vol_portf = portf_results_df.loc[min_vol_ind]
 
-            st.subheader('Minimum Volatility Performance')
-            min_col1, min_col2, min_col3 = st.columns(3)
-            min_col1.metric('Returns', str(
-                round(min_vol_portf[0] * 100, 2)) + "%")
-            min_col2.metric('Volatility', str(
-                round(min_vol_portf[1] * 100, 2)) + "%")
-            min_col3.metric('Sharpe Ratio', round(min_vol_portf[2], 2))
+            volatility_min = min_vol_portf[1]
+            sharpe_ratio_min = min_vol_portf[2]
+
+            ########################### MINIMUM VOLATILITY ############################
 
             min_vol_sorted = portf_results_df.sort_values(
                 by=['volatility'], ascending=True)
@@ -296,6 +299,20 @@ def app():
                 return_series_adj)
 
             return_series_min = weighted_return_series_min.sum(axis=1)
+
+            total_return_min = return_series_min.tail(1).values
+            annualized_min_portfolio_rtns = ((((1+total_return_min)**(365/no_of_days.days)) - 1)*100).round(2)
+
+            ###### END   ###########################
+
+            st.subheader('Minimum Volatility Performance')
+            min_col1, min_col2, min_col3 = st.columns(3)
+            min_col1.metric('Returns', str(annualized_min_portfolio_rtns[0]) + "%")
+            # min_col1.metric('Returns', str(
+            #     round(min_vol_portf[0] * 100, 2)) + "%")
+            min_col2.metric('Volatility', str(
+                round(volatility_min * 100, 2)) + "%")
+            min_col3.metric('Sharpe Ratio', round(sharpe_ratio_min, 2))
 
             return_plot_min = px.line(title='Portfolio Return')
             return_plot_min.add_scatter(
@@ -321,13 +338,7 @@ def app():
             max_returns_ind = np.argmax(portf_results_df.returns)
             max_returns_portf = portf_results_df.loc[max_returns_ind]
 
-            st.subheader('Maximum Returns Performance')
-            max_ret_col1, max_ret_col2, max_ret_col3 = st.columns(3)
-            max_ret_col1.metric('Returns', str(
-                round(max_returns_portf[0] * 100, 2)) + "%")
-            max_ret_col2.metric('Volatility', str(
-                round(max_returns_portf[1] * 100, 2)) + "%")
-            max_ret_col3.metric('Sharpe Ratio', round(max_returns_portf[2], 2))
+            # MAX RETURNS #
 
             max_ret_sorted = portf_results_df.sort_values(
                 by=['returns'], ascending=False)
@@ -343,6 +354,21 @@ def app():
 
             return_series_max_returns = weighted_return_series_max_returns.sum(
                 axis=1)
+
+            total_return_max_returns = return_series_max_returns.tail(1).values
+            annualized_max_returns_portfolio_rtns = ((((1+total_return_max_returns)**(365/no_of_days.days)) - 1)*100).round(2)
+
+            # MAX RETURN END #
+
+            st.subheader('Maximum Returns Performance')
+            max_ret_col1, max_ret_col2, max_ret_col3 = st.columns(3)
+            # max_ret_col1.metric('Returns', str(
+            #     round(max_returns_portf[0] * 100, 2)) + "%")
+            max_ret_col1.metric('Returns', str(
+                round(annualized_max_returns_portfolio_rtns[0])) + "%")
+            max_ret_col2.metric('Volatility', str(
+                round(max_returns_portf[1] * 100, 2)) + "%")
+            max_ret_col3.metric('Sharpe Ratio', round(max_returns_portf[2], 2))
 
             return_plot_max_returns = px.line(title='Portfolio Return')
             return_plot_max_returns.add_scatter(

@@ -322,6 +322,7 @@ class Portfolio:
         n_assets = len(self.symbols)
         print('n asset:', self.symbols)
         return_series = self.get_pct_change()
+        #avg_returns = (1 + return_series).cumprod() - 1
         avg_returns = return_series.mean() * self.n_days
         cov_mat = return_series.cov() * self.n_days
 

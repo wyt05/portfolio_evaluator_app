@@ -336,7 +336,8 @@ class Portfolio:
             portf_vol.append(np.sqrt(np.dot(weights[i].T,
                                             np.dot(cov_mat, weights[i]))))
         portf_vol = np.array(portf_vol)
-        portf_sharpe_ratio = portf_rtns / portf_vol
+        portf_sharpe_ratio = (portf_rtns - 0.01) / portf_vol
+        #portf_sharpe_ratio = (portf_rtns - 0.01) / portf_rtns
 
 
         portf_weights = []

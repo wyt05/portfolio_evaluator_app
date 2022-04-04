@@ -195,14 +195,13 @@ def app():
 
         st.write("Portfolio Performance")
         no_of_days = end_date - start_date
-        #portf_rtns = return_series_portfolio.tail(1).item()
+        portf_rtns = return_series_portfolio.tail(1).item()
 
         total_return = return_series_portfolio.tail(1).values
-        portf_rtns = (
-            (((1+total_return)**(365/no_of_days.days)) - 1)*100).round(2)
+        portf_annualized_rtns = ((((1+total_return)**(365/no_of_days.days)) - 1)*100).round(2)
 
         portf_sharpe_ratio = (
-            (portf_rtns[0]/100) - 0.01)/return_series_portfolio.std()
+            (portf_rtns/100) - 0.01)/return_series_portfolio.std()
 
         portf_vol = np.sqrt(np.log(
             weighted_close_portfolio['Close'] / weighted_close_portfolio['Close'].shift(1)).var()) * np.sqrt(252)
@@ -216,7 +215,7 @@ def app():
         # st.write(portf_vol)
         # st.write(portf_sharpe_ratio)
 
-        max_col1.metric('Annualized Returns', str(portf_rtns[0]) + "%")
+        max_col1.metric('Annualized Returns', str(portf_annualized_rtns[0]) + "%")
         max_col2.metric('Annualized Volatility', str(round(portf_vol * 100, 2)) + "%")
         max_col3.metric('Sharpe Ratio', round(portf_sharpe_ratio, 2))
         max_col4.metric('Sortino Ratio', round(sortino_ratio, 2))

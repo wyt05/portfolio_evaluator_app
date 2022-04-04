@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 import pyfolio as pf
 import pandas_ta as ta 
-from mechanize import Item
 from soupsieve import select
 import streamlit as st
 from datetime import datetime
@@ -18,7 +17,6 @@ import yfinance as yf
 from pages.portfolio import Portfolio
 from pages.sentiment import Sentiment_Class
 from io import BytesIO
-import pyfolio as pf
 
 def var_historic(r, level=1):
     if isinstance(r, pd.DataFrame):

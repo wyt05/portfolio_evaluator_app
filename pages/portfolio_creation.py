@@ -64,6 +64,9 @@ def app():
     st.title("Portfolio Creation Page")
     st.write("Stonks only go up")
 
+    start_date_df = datetime(2021, 1, 1)
+    end_date_df = datetime(2021, 12, 31)
+
     with st.form(key='stock_selection'):
 
         symbols = st_tags(label="Choose some stocks to add to a portfolio",
@@ -76,8 +79,8 @@ def app():
             'Insert weight of stocks, in this format: 0.1,0.1,0.1. Needs to add up to 1')
         port_weight_equalize = st.checkbox('Equalize weight?')
         date_cols = st.columns((1, 1))
-        start_date = date_cols[0].date_input('Start Date')
-        end_date = date_cols[1].date_input('End Date')
+        start_date = date_cols[0].date_input('Start Date', start_date_df)
+        end_date = date_cols[1].date_input('End Date', end_date_df)
         submitted = st.form_submit_button('Submit')
 
     if submitted:
@@ -95,6 +98,8 @@ def app():
             RISKY_ASSETS.sort()
             START_DATE = start_date
             END_DATE = end_date
+            
+            print(RISKY_ASSETS)
 
             # Block of IF code to check if user want to equalize weight
 
@@ -107,8 +112,6 @@ def app():
                     stock_weight.append(equalized)
 
                 port_weight = stock_weight
-
-            print(RISKY_ASSETS)
 
             # VISUALISE CURRENT WEIGHT
             #panel_data = data.DataReader(symbols,'yahoo', start_date, end_date)
@@ -220,7 +223,7 @@ def app():
             max_sharpe_ind = np.argmax(portf_results_df.sharpe_ratio)
             max_sharpe_portf = portf_results_df.loc[max_sharpe_ind]
 
-            print('sharpe:', max_sharpe_ind)
+            print('sharpe:', max_sharpe_portf)
 
             st.subheader('Maximum Sharpe Ratio Performance')
             max_col1, max_col2, max_col3 = st.columns(3)
@@ -233,10 +236,15 @@ def app():
             max_sharpe_sorted = portf_results_df.sort_values(
                 by=['sharpe_ratio'], ascending=False)
             max_sharpe_portf = max_sharpe_sorted.head(1)
+
             temp = final_weights[max_sharpe_portf.index]
 
             max_sharpe_weight_final_df = pd.DataFrame(index=RISKY_ASSETS)
             max_sharpe_weight_final_df['weights'] = temp[0]
+
+            return_series_adj = return_series_adj.drop(columns='Portfolio')
+
+            print(return_series_adj)
 
             # print graph
             weighted_return_series_max = max_sharpe_weight_final_df['weights'] * (

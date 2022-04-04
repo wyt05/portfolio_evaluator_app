@@ -119,7 +119,7 @@ def app():
           max_col1, max_col2, max_col3= st.columns(3)
         
           max_col1.metric('Net Income Ratio', str(round(jsonResponse[0]["netIncomeRatio"], 2)))
-          max_col2.metric('Earning Per Share', str(jsonResponse[0]["eps"]))
+          max_col2.metric('Earning Per Share', str(round(jsonResponse[0]["eps"], 2)))
           max_col3.metric('Profit', "$" + str("{:,}".format(jsonResponse[0]["grossProfit"])))
         
         #Technical Indicator results

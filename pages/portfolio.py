@@ -320,6 +320,7 @@ class Portfolio:
     def monte_carlo_sim(self):
         np.random.seed(42)
         n_assets = len(self.symbols)
+        print('n asset:', self.symbols)
         return_series = self.get_pct_change()
         avg_returns = return_series.mean() * self.n_days
         cov_mat = return_series.cov() * self.n_days

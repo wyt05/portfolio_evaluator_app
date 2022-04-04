@@ -141,7 +141,7 @@ def app():
             RISKY_ASSETS, start_date, end_date, portfolio_rst=weighted_close_portfolio)
 
             sortino_ratio = tech_ind_obj.get_alt_sortino_ratio()
-            sharpe_ratio = tech_ind_obj.get_alt_sharpe_ratio()
+            sharpe_ratio = tech_ind_obj.get_sharpe_ratio(0.01)
             value_at_risk = var_historic(return_series_portfolio.dropna())
 
 

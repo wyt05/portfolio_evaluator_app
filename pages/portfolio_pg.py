@@ -101,7 +101,7 @@ def app():
         #['ALGN', 'BLK', 'CERN', 'ENIA', 'FORD', 'INFO', 'INVH', 'NFLX', 'RSG', 'TSLA']
         portfolio_tickers_timmy = [['ALGN', 0.1], ['BLK', 0.1], ['CERN', 0.05], ['ENIA', 0.05], ['FORD', 0.05], ['IHS', 0.05], ['INVH', 0.06], ['NFLX', 0.09], ['RSG', 0.1], ['TSLA', 0.35]]
         #portfolio_tickers_timmy = [['SPY', 0.5, ], ['SBUX', 0.1], ['TSLA', 0.4]]
-        portfolio_tickers_jimmy = [['SPY', 0.5], ['EURUSD=X', 0.5]]
+        portfolio_tickers_jimmy = [['SPY', 0.5], ['TLT', 0.5]]
 
         # initialize portfolio data
         if portfolio_choice[0] in st.session_state:
@@ -217,7 +217,7 @@ def app():
         # st.write(portf_sharpe_ratio)
 
         max_col1.metric('Annualized Returns', str(portf_rtns[0]) + "%")
-        max_col2.metric('Annualized Volatility', str(round(portf_vol, 2) * 100) + "%")
+        max_col2.metric('Annualized Volatility', str(round(portf_vol * 100, 2)) + "%")
         max_col3.metric('Sharpe Ratio', round(portf_sharpe_ratio, 2))
         max_col4.metric('Sortino Ratio', round(sortino_ratio, 2))
         max_col5.metric('Kurtosis', round(portf_kurt, 2))
@@ -275,9 +275,13 @@ def app():
         st.subheader('Overall News Sentiment')
         with st.spinner('Loading News Sentiment, depending on how large is your portfolio, it might take a while...'):
             complete_news_sentiment = pd.DataFrame()
+            individual_ticker_sentiment = []
+            
             for ticker in tickers:
                 news_obj = Sentiment_Class(ticker)
                 news_sentiment = news_obj.sentiment_analysis_df()
+                individual_total_score = news_sentiment['score'].sum()
+                individual_ticker_sentiment.append(individual_total_score)
                 complete_news_sentiment = pd.concat([complete_news_sentiment, news_sentiment])
 
             pd.set_option('display.max_colwidth', None)
@@ -293,6 +297,12 @@ def app():
             st.success("News are positive")
         elif average_score < 0:
             st.success("News are negative")
+
+        #Display sentiment analysis for individual stocks
+        st.subheader("Individual Stock Sentiment Performance")
+        stock_performance_df = pd.DataFrame({'Stock': tickers, 'Sentiment Score': individual_ticker_sentiment})
+
+        st.dataframe(stock_performance_df)
 
         re_fig = go.Figure(data=[go.Table(
             header=dict(values=list(complete_news_sentiment.columns),

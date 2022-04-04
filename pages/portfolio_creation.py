@@ -168,7 +168,7 @@ def app():
             # max_col5.metric('Skewness', round(portf_skew, 2))
 
             max_col1.metric('Annualized Returns', str(portf_rtns[0]) + "%")
-            max_col2.metric('Annualized Volatility', str(round(portf_vol, 2) * 100) + "%")
+            max_col2.metric('Annualized Volatility', str(round(portf_vol * 100, 2)) + "%")
             max_col3.metric('Sharpe Ratio', round(portf_sharpe_ratio, 2))
             max_col4.metric('Sortino Ratio', round(sortino_ratio, 2))
             max_col5.metric('Kurtosis', round(portf_kurt, 2))

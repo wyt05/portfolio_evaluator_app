@@ -268,6 +268,7 @@ class Portfolio:
     def get_sharpe_ratio(self, risk_free_rate):
         returns_ts = pd.DataFrame()
         returns_ts['pct_change'] = self.get_pct_change()
+        #returns_ts['pct_change'] = self.get_return_series()['return_series']
         avg_daily_ret = returns_ts['pct_change'].mean()
 
         returns_ts['riskfree_rate'] = risk_free_rate / 252

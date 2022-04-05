@@ -140,13 +140,15 @@ def app():
             tech_ind_obj = Portfolio(
             RISKY_ASSETS, start_date, end_date, portfolio_rst=weighted_close_portfolio)
 
-            sortino_ratio = tech_ind_obj.get_alt_sortino_ratio()
+            no_of_days = end_date - start_date
+
+            #sortino_ratio = tech_ind_obj.get_alt_sortino_ratio()
+            sortino_ratio = tech_ind_obj.get_sortino_ratio(0.01, no_of_days.days)
             sharpe_ratio = tech_ind_obj.get_sharpe_ratio(0.01)
             value_at_risk = var_historic(return_series_portfolio.dropna())
 
 
             st.write("Portfolio Performance")
-            no_of_days = end_date - start_date
             portf_rtns = return_series_portfolio.tail(1).item()
             
             total_return = return_series_portfolio.tail(1).values

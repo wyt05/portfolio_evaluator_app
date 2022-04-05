@@ -155,14 +155,16 @@ def app():
         weighted_close_portfolio['Adj Close'] = weighted_adj_closing_series.sum(
             axis=1)
 
-        print(weighted_close_portfolio)
+        no_of_days = end_date - start_date
+        portf_rtns = return_series_portfolio.tail(1).item()
 
         #Place the Portfolio item into the class (For any measurements using price)
         tech_ind_obj = Portfolio(
             tickers, start_date, end_date, portfolio_rst=weighted_close_portfolio)
         technical_ind_chart = tech_ind_obj.get_technical_indicators()
 
-        sortino_ratio = tech_ind_obj.get_alt_sortino_ratio()
+        #sortino_ratio = tech_ind_obj.get_alt_sortino_ratio()
+        sortino_ratio = tech_ind_obj.get_sortino_ratio(0.01, no_of_days.days)
         value_at_risk = var_historic(return_series_portfolio.dropna())
 
         # Plotting the return series
@@ -194,8 +196,6 @@ def app():
         # Caculating Ration
 
         st.write("Portfolio Performance")
-        no_of_days = end_date - start_date
-        portf_rtns = return_series_portfolio.tail(1).item()
 
         total_return = return_series_portfolio.tail(1).values
         portf_annualized_rtns = ((((1+total_return)**(365/no_of_days.days)) - 1)*100).round(2)

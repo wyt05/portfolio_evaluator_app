@@ -163,6 +163,7 @@ def app():
             tickers, start_date, end_date, portfolio_rst=weighted_close_portfolio)
         technical_ind_chart = tech_ind_obj.get_technical_indicators()
 
+        sharpe_ratio = tech_ind_obj.get_sharpe_ratio(0.01)
         #sortino_ratio = tech_ind_obj.get_alt_sortino_ratio()
         sortino_ratio = tech_ind_obj.get_sortino_ratio(0.01, no_of_days.days)
         value_at_risk = var_historic(return_series_portfolio.dropna())
@@ -217,7 +218,8 @@ def app():
 
         max_col1.metric('Annualized Returns', str(portf_annualized_rtns[0]) + "%")
         max_col2.metric('Annualized Volatility', str(round(portf_vol * 100, 2)) + "%")
-        max_col3.metric('Sharpe Ratio', round(portf_sharpe_ratio, 2))
+        max_col3.metric('Sharpe Ratio', round(sharpe_ratio, 2))
+        #max_col3.metric('Sharpe Ratio', round(portf_sharpe_ratio, 2))
         max_col4.metric('Sortino Ratio', round(sortino_ratio, 2))
         max_col5.metric('Kurtosis', round(portf_kurt, 2))
         max_col6.metric('Skewness', round(portf_skew, 2))

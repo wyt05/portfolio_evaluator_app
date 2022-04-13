@@ -19,11 +19,11 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from yarg import newest_packages
 
 
-# nltk.download('vader_lexicon')
-# nltk.download('stopwords')
-# nltk.download('wordnet')
-# nltk.download('punkt')
-# nltk.download('omw-1.4')
+nltk.download('vader_lexicon')
+nltk.download('stopwords')
+nltk.download('wordnet')
+nltk.download('punkt')
+nltk.download('omw-1.4')
 
 
 class Sentiment_Class:

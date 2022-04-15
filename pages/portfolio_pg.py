@@ -281,8 +281,9 @@ def app():
             for ticker in tickers:
                 news_obj = Sentiment_Class(ticker)
                 news_sentiment = news_obj.sentiment_analysis_df()
-                individual_total_score = news_sentiment['score'].sum()
-                individual_ticker_sentiment.append(individual_total_score)
+                total_news_score = news_sentiment.shape[0]
+                individual_average_score = news_sentiment['score'].sum() / total_news_score
+                individual_ticker_sentiment.append(individual_average_score)
                 complete_news_sentiment = pd.concat([complete_news_sentiment, news_sentiment])
 
             pd.set_option('display.max_colwidth', None)
@@ -290,9 +291,9 @@ def app():
         total_news = complete_news_sentiment.shape[0]
         average_score = complete_news_sentiment['score'].sum() / total_news
 
-        score_met1, score_met2 = st.columns(2)
-        score_met1.metric('Total Score:', int(complete_news_sentiment['score'].sum()))
-        score_met2.metric('Average Score:', round(average_score, 2))
+        #score_met1, score_met2 = st.columns(2)
+        #score_met1.metric('Total Score:', int(complete_news_sentiment['score'].sum()))
+        st.metric('Average Score:', round(average_score, 2))
 
         if average_score > 0:
             st.success("News are positive")

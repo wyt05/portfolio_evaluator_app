@@ -71,7 +71,7 @@ class Portfolio:
 
         technical_ind = self.portfolio_rst
 
-        macd = ta.macd(self.portfolio_rst['Close'], fast=12, slow=26)
+        macd = ta.macd(self.portfolio_rst['Close'], fast=12, slow=26,)
         rsi = ta.rsi(self.portfolio_rst['Close'])
         bbands = ta.bbands(self.portfolio_rst['Close'], length=20)
 
@@ -135,7 +135,7 @@ class Portfolio:
                 points = 2
             else:
                 message = 'The price has broken past lower band, and price is trending downwards. Very negative signal. Recommend STRONG SELL to cut losses'
-                points = -4
+                points = -2
 
         else:
 
@@ -312,7 +312,6 @@ class Portfolio:
         return self.portfolio_rst['Adj Close'].pct_change().dropna()
 
     def get_avg_returns(self):
-
         return self.get_pct_change().mean() * self.n_days
 
     def get_cov_mat(self):

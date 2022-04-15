@@ -162,9 +162,9 @@ def app():
         total_news = news_sentiment.shape[0]
         average_score =  news_sentiment['score'].sum() / total_news
 
-        score_met1, score_met2 = st.columns(2)
-        score_met1.metric('Total Score:', int(news_sentiment['score'].sum()))
-        score_met2.metric('Average Score:', round(average_score, 2))
+        #score_met1, score_met2 = st.columns(2)
+        #score_met1.metric('Total Score:', int(news_sentiment['score'].sum()))
+        st.metric('Average Score:', round(average_score, 2))
         
         if average_score > 0:
           st.success("News are positive")

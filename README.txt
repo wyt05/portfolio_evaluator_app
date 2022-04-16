@@ -1,0 +1,1 @@
+To run the app, just type: streamlit run app.py on the console.
